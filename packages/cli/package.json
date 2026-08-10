@@ -1,0 +1,19 @@
+{
+  "name": "@mollyguard/cli",
+  "version": "0.0.1",
+  "description": "MollyGuard — specification lifecycle management from the command line.",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "molly": "dist/bin.js"
+  },
+  "files": ["dist"],
+  "engines": { "node": ">=20" },
+  "publishConfig": { "access": "public" },
+  "scripts": { "build": "tsc -b && chmod +x dist/bin.js" },
+  "dependencies": {
+    "@mollyguard/core": "0.0.1",
+    "@mollyguard/store": "0.0.1"
+  }
+}

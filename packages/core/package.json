@@ -1,0 +1,12 @@
+{
+  "name": "@mollyguard/core",
+  "version": "0.0.1",
+  "description": "MollyGuard's engine: the areas, the notation, the lifecycle. Pure — no filesystem, no network, no clock.",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "engines": { "node": ">=20" },
+  "publishConfig": { "access": "public" },
+  "scripts": { "build": "tsc -b" }
+}

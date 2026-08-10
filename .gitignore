@@ -1,18 +1,21 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
+node_modules
+npm-debug.log*
 
-# Other files and folders
-.settings/
+# Editor and OS state. Machine-local, and none of it describes the project.
+.idea/
+*.iml
+.vscode/*
+.DS_Store
 
-# Executables
-*.swf
-*.air
-*.ipa
-*.apk
+# Build output
+dist
+*.tsbuildinfo
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# Corpus state is deliberately NOT ignored. The transition history and the verdict
+# ledger are the audit trail — committing them is what makes an approval
+# reconstructable months later.
+
+# A snapshot of the previous implementation and its corpus, kept to read from while
+# this one is rebuilt. Ignored because a second copy of the knowledge base is not the
+# knowledge base, and the real record of what it said is the git history.
+.corpus-archive/

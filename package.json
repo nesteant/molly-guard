@@ -1,0 +1,22 @@
+{
+  "name": "mollyguard-workspace",
+  "private": true,
+  "version": "0.0.1",
+  "description": "MollyGuard — your specification guardian.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/core",
+    "packages/store",
+    "packages/cli"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "smoke": "bash scripts/smoke.sh",
+    "molly": "node packages/cli/dist/bin.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}
