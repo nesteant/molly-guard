@@ -11,4 +11,12 @@
  */
 
 export * from './areas';
+export * from './capability';
+export * from './change';
+export * from './choices';
+export * from './frontmatter';
+export * from './lifecycle';
 export * from './readmes';
+export * from './scaffold';
+export * from './slug';
+export * from './templates';

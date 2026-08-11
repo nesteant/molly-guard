@@ -1,12 +1,44 @@
 {
   "name": "@mollyguard/core",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "MollyGuard's engine: the areas, the notation, the lifecycle. Pure — no filesystem, no network, no clock.",
+  "keywords": [
+    "mollyguard",
+    "specification",
+    "knowledge-base",
+    "adr",
+    "agent-skills"
+  ],
   "license": "MIT",
+  "author": "Anton Nesterenko",
+  "homepage": "https://github.com/nesteant/molly-guard#readme",
+  "bugs": "https://github.com/nesteant/molly-guard/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nesteant/molly-guard.git",
+    "directory": "packages/core"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
-  "engines": { "node": ">=20" },
-  "publishConfig": { "access": "public" },
-  "scripts": { "build": "tsc -b" }
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "prepack": "npm run build && cp ../../LICENSE ."
+  }
 }

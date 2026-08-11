@@ -1,19 +1,31 @@
 {
   "name": "mollyguard-workspace",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "MollyGuard — your specification guardian.",
   "license": "MIT",
+  "author": "Anton Nesterenko",
+  "homepage": "https://github.com/nesteant/molly-guard#readme",
+  "bugs": "https://github.com/nesteant/molly-guard/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nesteant/molly-guard.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "packages/core",
     "packages/store",
     "packages/cli"
   ],
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc -b && chmod +x packages/cli/dist/bin.js",
     "clean": "tsc -b --clean",
     "smoke": "bash scripts/smoke.sh",
-    "molly": "node packages/cli/dist/bin.js"
+    "molly": "node packages/cli/dist/bin.js",
+    "prerelease": "npm run clean && npm run build && npm run smoke",
+    "release": "npm publish -w @mollyguard/core && npm publish -w @mollyguard/store && npm publish -w mollyguard"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

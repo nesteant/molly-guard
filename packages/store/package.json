@@ -1,15 +1,48 @@
 {
   "name": "@mollyguard/store",
-  "version": "0.0.1",
-  "description": "Filesystem adapter for a MollyGuard corpus.",
+  "version": "0.1.0",
+  "description": "Filesystem adapter for a MollyGuard corpus: reads and writes documents, bundles and the transition ledger.",
+  "keywords": [
+    "mollyguard",
+    "specification",
+    "knowledge-base",
+    "markdown",
+    "frontmatter"
+  ],
   "license": "MIT",
+  "author": "Anton Nesterenko",
+  "homepage": "https://github.com/nesteant/molly-guard#readme",
+  "bugs": "https://github.com/nesteant/molly-guard/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nesteant/molly-guard.git",
+    "directory": "packages/store"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
-  "engines": { "node": ">=20" },
-  "publishConfig": { "access": "public" },
-  "scripts": { "build": "tsc -b" },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "prepack": "npm run build && cp ../../LICENSE ."
+  },
   "dependencies": {
-    "@mollyguard/core": "0.0.1"
+    "@mollyguard/core": "^0.1.0",
+    "yaml": "^2.6.1"
   }
 }

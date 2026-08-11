@@ -1,0 +1,9 @@
+# The transition ledger is append-only, and two branches that each advanced a change have both
+# appended at the end of it. Without this, that is a conflict on every merge — git cannot know
+# that two additions at the same position are both wanted. With it, both lines survive.
+#
+# Union merge is only ever safe for a file whose lines are independent facts and whose order
+# carries no meaning beyond "this happened". That is exactly what this ledger is, and it is why
+# nothing else in the corpus gets this treatment: two edits to a specification are a
+# disagreement somebody has to resolve, and silently keeping both would be the wrong answer.
+docs/.mollyguard/history.jsonl merge=union

@@ -14,16 +14,24 @@ export const CONFIG_FILE = 'mollyguard.yml';
 export const HISTORY_FILE = `${STATE_DIR}/history.jsonl`;
 
 /**
- * `README.md` is documentation, never a record.
+ * The name of the file a directory explains itself in.
  *
- * Every other `.md` in an area is read as a document, which is why a directory could not
- * otherwise explain itself: an explainer in `decisions/` would parse as a decision named
- * `readme`, and one in `specs/` — which holds folders — would be reported as a stray file.
- * The exclusion is by name, in one place, for every area: a rule per area is a rule somebody
- * forgets when they add the next one.
+ * Nothing reads it. Every directory carries one because git tracks no empty directory, so a
+ * skeleton without them is a corpus that vanishes on clone.
  */
 export const README_FILE = 'README.md';
 
-export function isReadme(fileName: string): boolean {
-  return /^readme(\.[a-z]{2,3}(-[A-Za-z0-9]{2,8})*)?\.md$/i.test(fileName);
+/**
+ * Whether a directory entry is a document at all.
+ *
+ * **A file named `README.md`, in any area, is documentation and never a record** — excluded by
+ * name, here, for every area including the ones added later. A rule written per area is one
+ * somebody forgets when they add the next one, and the failure is an explainer in `decisions/`
+ * parsing as a decision called `readme`.
+ *
+ * Machine-local clutter goes the same way: a `.DS_Store` reported as unreadable would make the
+ * report itself the noise.
+ */
+export function isDocumentName(name: string): boolean {
+  return !name.startsWith('.') && name !== README_FILE;
 }

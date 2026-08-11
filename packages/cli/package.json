@@ -1,19 +1,55 @@
 {
-  "name": "@mollyguard/cli",
-  "version": "0.0.1",
+  "name": "mollyguard",
+  "version": "0.1.0",
   "description": "MollyGuard — specification lifecycle management from the command line.",
+  "keywords": [
+    "mollyguard",
+    "specification",
+    "knowledge-base",
+    "adr",
+    "agent-skills",
+    "cli",
+    "documentation"
+  ],
   "license": "MIT",
+  "author": "Anton Nesterenko",
+  "homepage": "https://github.com/nesteant/molly-guard#readme",
+  "bugs": "https://github.com/nesteant/molly-guard/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nesteant/molly-guard.git",
+    "directory": "packages/cli"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": {
-    "molly": "dist/bin.js"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   },
-  "files": ["dist"],
-  "engines": { "node": ">=20" },
-  "publishConfig": { "access": "public" },
-  "scripts": { "build": "tsc -b && chmod +x dist/bin.js" },
+  "bin": {
+    "molly": "dist/bin.js",
+    "mollyguard": "dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -b && chmod +x dist/bin.js",
+    "prepack": "npm run build && cp ../../LICENSE . && cp ../../README.md ."
+  },
   "dependencies": {
-    "@mollyguard/core": "0.0.1",
-    "@mollyguard/store": "0.0.1"
+    "@mollyguard/core": "^0.1.0",
+    "@mollyguard/store": "^0.1.0",
+    "@inquirer/prompts": "^8.5.2"
   }
 }

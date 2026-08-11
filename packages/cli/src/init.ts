@@ -16,6 +16,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ROOT_README, STATE_README, allDirectories, readmeFor } from '@mollyguard/core';
 import { CONFIG_FILE, HISTORY_FILE, README_FILE, STATE_DIR } from '@mollyguard/store';
+import { agentsCommand } from './agents';
 import { bold, dim, fail, green, info, teal } from './ui';
 
 const CONFIG = (lang: string): string => `# MollyGuard corpus configuration.
@@ -24,7 +25,12 @@ const CONFIG = (lang: string): string => `# MollyGuard corpus configuration.
 lang: ${lang}
 `;
 
-export async function initCommand(root: string, dir: string, lang: string): Promise<number> {
+export async function initCommand(
+  root: string,
+  dir: string,
+  lang: string,
+  cwd: string,
+): Promise<number> {
   if (existsSync(join(root, CONFIG_FILE))) {
     fail(
       `a corpus already exists at ${dir}/`,
@@ -56,8 +62,21 @@ export async function initCommand(root: string, dir: string, lang: string): Prom
   info(`  ${dim('config')}      ${dir}/${CONFIG_FILE}`);
   info(`  ${dim('areas')}       ${directories.join(', ')}`);
   info(`  ${dim('readme')}      ${readmes} file(s) — one per directory, saying what belongs in it`);
-  info(`  ${dim('knowledge')}   ${dim('empty — nothing is true until a change merges')}`);
+  info(`  ${dim('knowledge')}   ${dim('empty — nothing is true until a change is published')}`);
   info(`  ${dim('language')}    ${lang}`);
+  info(`  ${dim('agents')}      instructions, in the directories agent tools read`);
+  info();
+  info();
+
+  // Installed with the corpus rather than as a second step, because from where the person is
+  // standing there is one act: this repository now uses MollyGuard. A corpus whose agent finds
+  // no instructions is one whose agent improvises a workflow — editing the knowledge base
+  // directly, writing deltas, hand-writing a state — and every one of those produces a corpus
+  // that looks maintained and is not.
+  //
+  // Written at the working directory rather than inside the corpus: it is where the tools look.
+  await agentsCommand(cwd, { check: false });
+
   info();
   info(`Next: ${bold('molly change new "<title>"')} — nothing enters the base any other way.`);
   return 0;

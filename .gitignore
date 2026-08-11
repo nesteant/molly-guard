@@ -11,6 +11,11 @@ npm-debug.log*
 dist
 *.tsbuildinfo
 
+# Copied into each package by `prepack` so the tarball carries them. The originals are at
+# the root — a committed copy is a second answer that drifts the first time one is edited.
+packages/*/LICENSE
+packages/cli/README.md
+
 # Corpus state is deliberately NOT ignored. The transition history and the verdict
 # ledger are the audit trail — committing them is what makes an approval
 # reconstructable months later.

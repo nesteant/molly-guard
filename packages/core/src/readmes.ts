@@ -17,29 +17,39 @@ export const ROOT_README = (dir: string): string => `# ${dir}/
 The knowledge base, and the changes that alter it.
 
 Two facts explain the whole layout. **A specification has no lifecycle** — it is what the
-product is currently believed to be, and it is altered only by a change merging into it. **A
-change has one** — it is drafted, reviewed, approved, implemented, verified, and merged. So
+product is currently believed to be, and it is altered only by a change published into it. **A
+change has one** — drafted, reviewed, approved, worked on, implemented, verified, deployed, and
+finally published. So
 the directory edited day to day is \`changes/\`; everything else is a grouping, accumulated
 truth, or a record of what happened.
 
 | Directory | Holds | How something gets there |
 | --- | --- | --- |
-| \`capabilities/\` | what the product is responsible for | written directly |
-| \`specs/\` | accumulated truth | a change merges into it |
-| \`decisions/\` | constraints outliving any one change | extracted from a design at merge |
+| \`capabilities/\` | what the product is responsible for | \`molly capability new\` |
+| \`specs/\` | accumulated truth | \`molly publish\` |
+| \`decisions/\` | constraints outliving any one change | \`molly publish\` |
 | \`roadmap/\` | intent not specified yet | written directly |
 | \`changes/\` | work in flight | \`molly change new\` |
-| \`history/\` | merged changes, kept verbatim | \`molly merge\` |
+| \`history/\` | changes that were published, kept whole | \`molly publish\` |
 
 Each one has a README saying what belongs in it.
+
+**Nothing enters the knowledge base except by publishing a change.** A change carries the
+documents it proposes in \`changes/<name>/publish/\`, mirroring this directory, and
+\`molly publish\` files them, archives the bundle into \`history/\` and records it. The tool
+writes no prose: every document was written by a person, or by an agent acting as one.
 
 \`.mollyguard/\` is the audit trail: an append-only transition history. Commit it, and never
 edit it by hand — every state is folded from that history, so editing it is how a record
 starts disagreeing with what happened.
 
-Nothing here parses your prose. Every document is markdown, and the machine-readable part
-rides in HTML comments that render as nothing, so a corpus can be written and read in any
-language with none of the tool left in the text.
+The instructions an agent reads are installed *outside* this directory, where agent tools look —
+\`molly init\` writes them and \`molly agents\` reinstalls them after an upgrade. They hold no
+decision, capability or language: they say where those live, which is here.
+
+Nothing here parses your prose. Every document is markdown; what the tool reads is the
+frontmatter block at the top, and everything below it is text a person wrote for another
+person. So a corpus can be written and read in any language with none of the tool left in it.
 `;
 
 export const STATE_README = `# .mollyguard/
@@ -62,12 +72,14 @@ const AREA_READMES: Readonly<Record<string, string>> = {
 
 What the product is responsible for, and where the edges are.
 
-One file per capability. A capability is a grouping: a specification names the capability it
-belongs to, and reading is scoped by it — which is what keeps a corpus readable once it no
-longer fits in one sitting.
+One file per capability, written by \`molly capability new "<title>"\` or by hand — both are
+fine, because no change alters a capability. A grouping is not a claim about the product; it is
+how the claims are filed. A change says which capability its work belongs to, and the name it
+gives has to be one of these.
 
-Written directly. No change alters one, because a grouping is not a claim about the product;
-it is how the claims are filed.
+**No lifecycle, and nothing here reaches the ledger.** A capability is current; it has no state
+to move through, so creating one records nothing. The ledger is the record of what happened to
+things that are in flight.
 
 State the edge rather than the centre. A capability with no stated boundary collects every
 specification nobody else wanted.
@@ -81,8 +93,13 @@ One folder per specification. \`spec.md\` is the business specification and \`ar
 is how it is built — siblings, so the two are reviewed and moved together instead of drifting
 apart.
 
-**Not edited here.** A specification arrives, and is altered, only by a change merging into
-it. Editing this directory bypasses every check there is.
+**Not edited here.** A specification arrives, and is altered, only by \`molly publish\` filing
+a change's documents into this directory — so an edit made here has no change behind it, and
+nothing in the history to say where it came from.
+
+A change replaces a document **whole** rather than patching part of it. Whoever drafts writes
+the new version; nothing combines two texts, which is what keeps a page something a person
+wrote rather than a pile of applied deltas.
 
 A specification has no state; it is current, or superseded. What has a lifecycle is the change
 altering it.
@@ -96,9 +113,12 @@ One file per decision: a rule later work has to respect. Not a description of ho
 built — that is a specification's \`architecture.md\`.
 
 They are not written here by hand. A design in \`changes/<name>/plan.md\` marks the part of
-itself that is a standing constraint, and the merge extracts it into this directory. Extracted
-at merge rather than at approval, because until a change is verified its design is a proposal,
-and recording it as binding earlier would hold later work to something that might be reverted.
+itself that is a standing constraint, and whoever prepares the change writes that constraint as
+a document in \`changes/<name>/publish/decisions/\`, which \`molly publish\` files here.
+
+Filed at publication rather than at approval, because until a change is verified its design is
+a proposal, and recording it as binding earlier would hold later work to something that might
+be reverted.
 
 A decision is in force, or superseded by a change that says so.
 `,
@@ -121,25 +141,50 @@ belongs to. A long plan is not that shape, and belongs outside the corpus.
 
 Work in flight. This is the directory you edit.
 
-One folder per change. \`change.md\` is the delta — what this change alters, in the knowledge
-base's terms — and it is the only file required to exist.
+One folder per change, and four documents in it: \`change.md\` says what this change makes true
+and why, \`plan.md\` how it will be built, \`tasks.md\` the work in order, and \`tests.md\` what
+will prove it. Only \`change.md\` carries a frontmatter record — a title repeated in four files
+is a title that disagrees with itself by the end of the week.
 
-A change moves \`draft → review → approved → in_progress → implemented → verified → merged\`,
-one state at a time. \`molly move <change> <state>\` advances it; \`molly merge\` folds it into
-the knowledge base and archives what is left.
+A change has a state, in this sequence:
 
-Nothing outside a marker is read. The prose around it is for whoever reviews the change.
+\`\`\`
+draft → review → approved → in_progress → implemented → verified → deployed → published
+\`\`\`
+
+\`molly move\` records a move; run it with no arguments and it asks which change and which
+state. \`molly status\` says where everything is.
+
+A fifth thing may sit beside the four documents: \`publish/\`, a mirror of the corpus holding
+the documents this change puts into the knowledge base — \`publish/specs/<name>/spec.md\`
+becomes \`specs/<name>/spec.md\`. \`molly publish\` files them and archives the bundle.
+
+**The sequence is an order, not a rule.** Any state may follow any other, and nothing here
+refuses a move on those grounds — what one requires is policy, and policy belongs to an
+extension or to whatever orchestrates the work. The order still decides what a picker offers
+first, and whether a move is recorded as going forwards or back.
+
+The last state is the one exception, and it is not about order: \`published\` is reached by
+\`molly publish\`, which writes the change's documents into the knowledge base. \`molly move\`
+refuses it, because recording it would claim a publication that never happened.
+
+Nothing outside the frontmatter is read. The prose is for whoever reviews the change.
 `,
 
   history: `# history/
 
 Merged changes, kept verbatim.
 
-A change that merges is archived here rather than deleted. Nothing here is edited, and nothing
-here is re-checked — a merged delta has already been applied, so asking whether it still
-applies would fail on its own success.
+A change that is published is archived here rather than deleted. Nothing here is edited, and
+nothing here is re-checked — what it claimed is now in the knowledge base, so asking whether it
+still applies would fail on its own success.
 
-A correction after a merge is a new change. \`merged\` is terminal.
+\`molly publish\` puts a change here, whole — including the \`publish/\` folder it carried, so
+this directory answers "what did that change actually write into the base" on its own.
+
+A correction after a publication is meant to be a new change rather than a retreat. Nothing
+enforces that yet: \`published\` is still reachable by \`molly move\`, which would claim a
+publication that never happened.
 `,
 };
 

@@ -7,4 +7,11 @@
  * absent as far as every check is concerned, and nothing downstream will ever mention it.
  */
 
+export * from './bundle';
+export * from './capability';
+export * from './frontmatter';
+export * from './history';
 export * from './layout';
+export * from './publish';
+export * from './scaffold';
+export * from './states';
