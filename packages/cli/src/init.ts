@@ -44,9 +44,12 @@ lang: ${lang}
 # something deleted by hand. \`--name\` still overrides, which is how a corpus migrates onto a
 # pattern without renaming what it already has.
 #
+# It suits an area read in order: changes are events, and decisions are numbered by convention.
+# \`specs\` accepts one too, though a knowledge base is read by topic, and a number is one more
+# thing to keep true when a document is renamed to match what it is now about.
+#
 # naming:
 #   changes:   '{ordinal:4}-{slug}'
-#   specs:     '{ordinal:4}-{slug}'
 #   decisions: '{ordinal:4}-{slug}'
 `;
 

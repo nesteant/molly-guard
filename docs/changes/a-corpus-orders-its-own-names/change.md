@@ -6,6 +6,7 @@ capability: the-corpus
 state: draft
 alters:
   - specs/creating-a-change
+  - specs/publishing-a-change
 ---
 
 # What this change makes true
@@ -15,6 +16,19 @@ alters:
 ID"` produce `0001-sign-in-with-entra-id` rather than `sign-in-with-entra-id`, with the number
 chosen by the tool. An area that declares no pattern keeps exactly the names it has today, and
 `--name` still overrides everywhere.
+
+**A document a change publishes is asked the same question.** The `new` commands mint through
+one seam; a specification or a decision never goes through it at all — its name is the folder the
+author wrote inside `publish/`, because the path is the id. So a corpus could order every name it
+handed out and none of the documents those names were handed out for. `molly publish` now refuses
+a *new* document whose name the pattern would not have produced, and names the folder to write
+instead: `publish/decisions/retries/` is told to become `0007-retries`.
+
+**It never renames one itself.** Filing a document somewhere other than where it was addressed is
+the one thing a publication may not do — and a corpus that renamed quietly would mint a *second*
+document the moment somebody wrote `retries` meaning to replace `0003-retries`. Only new
+documents are asked, and a bundled document is new when its folder is, so a change adding an
+`architecture.md` to a specification a year old is not naming anything.
 
 **A number is never reused, and "taken" is a wider question than "what is on disk".** Three
 places are asked: the area, its archive, and the transition ledger. The last is the one that
@@ -57,3 +71,8 @@ minted from the title and that `--name` overrides it. That stays true and gains 
 between them: the corpus's own pattern. `the-plan-and-the-corpus-agree` alters the same document,
 so whichever of the two publishes second carries the other's wording as well — a specification is
 replaced whole, and there is no delta format to merge two edits with.
+
+Also against `specs/publishing-a-change`, whose list of refusals gains one: a new document carries
+the name this corpus mints. Nothing else in that document moves. The path is still the id and
+there is still no target flag — this is a check on the path the author wrote, not a new way of
+choosing it.

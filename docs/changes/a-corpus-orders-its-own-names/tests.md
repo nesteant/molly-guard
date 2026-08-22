@@ -23,6 +23,28 @@ side if it were not.
 **`--name` still overrides.** `--name legacy-name` produces exactly that, unnumbered. The
 migration of a corpus onto a pattern is made of these.
 
+## The names a publication writes
+
+**A published name off the pattern is refused**, and the refusal names the folder to write
+instead — `0001-feeding-schedule`, not merely "that is wrong". A name the author cannot see
+before it is permanent is a name they will get wrong.
+
+**Nothing was published.** The refusal is checked to have written no document, because a
+publication is all of its documents or none of them.
+
+**A name on the pattern goes straight through**, which is the assertion that this is a check and
+not a rename.
+
+**Replacing a document keeps its old name.** A corpus adopting a pattern after it has documents
+is never asked to renumber them, and a change editing one is not blocked on doing so.
+
+**A file joining an existing document is not new.** An `architecture.md` published into a folder
+already in the base passes: a document is bundled, so *new* is a question about the folder rather
+than about each file in it.
+
+**A publication in a corpus with no policy is untouched**, in the same words as everywhere else
+this offer is checked for being an offer.
+
 ## The configuration
 
 **A pattern that will not parse is refused**, naming what a usable one looks like. `{ordinal}`

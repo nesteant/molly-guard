@@ -16,13 +16,17 @@ Each step is provable before the next starts, and the behaviour changes only at 
 5. **Call it from the two commands that mint.** `change new` and `capability new`. This is the
    step behaviour changes at, and it changes for nobody who has not declared a pattern.
 
-6. **Offer it in the file `init` writes**, commented out, saying what `{ordinal:n}` counts and
+6. **Ask the same of what a publication writes.** `publish` refuses a new document whose name
+   the corpus's pattern would not have produced, naming the folder to write instead. The one
+   place a name enters the corpus without passing through `nameFor`.
+
+7. **Offer it in the file `init` writes**, commented out, saying what `{ordinal:n}` counts and
    that `--name` still overrides.
 
-7. **Read `lang:` while the file is open**, so a corpus that declared one stops being handed
+8. **Read `lang:` while the file is open**, so a corpus that declared one stops being handed
    documents that contradict it.
 
-8. **Assert all of it**, including the case a directory listing cannot answer: a deleted change
+9. **Assert all of it**, including the case a directory listing cannot answer: a deleted change
    does not free its number.
 
-9. **Say it in the README**, where the assertion count is stated.
+10. **Say it in the README**, where the assertion count is stated.

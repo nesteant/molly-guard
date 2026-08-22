@@ -28,8 +28,12 @@ import {
   Located,
   TERMINAL,
   area,
+  CHANGE_PUBLISH,
   isSlug,
   locate,
+  matchName,
+  needsOrdinal,
+  renderName,
   stateOf,
   unqualify,
 } from '@mollyguard/core';
@@ -43,7 +47,10 @@ import {
   readCapabilities,
   readChanges,
   readHistory,
+  readConfig,
   readPublishSet,
+  patternFor,
+  takenOrdinals,
   writeDeclaredState,
 } from '@mollyguard/store';
 import { identity } from './identity';
@@ -157,6 +164,41 @@ export async function publishCommand(
     fail(
       `${at.node} is new and brings no ${holds.entry}`,
       `a new document in ${at.area}/ must carry ${holds.entry}, which holds its record`,
+    );
+  }
+
+  // A name the corpus's own policy would not have minted.
+  //
+  // The `new` commands mint through `nameFor`, so a change, a capability and a roadmap entry all
+  // get the corpus's shape. A published document does not: its name is the folder the author
+  // wrote inside `publish/`, because the path is the id and the path is the instruction. So a
+  // corpus that orders an area had its ordering apply everywhere except the area the documents
+  // actually land in — a numbered decision log being the case that wants it most.
+  //
+  // **Refused, and never renamed.** Writing `publish/decisions/retries/` into
+  // `decisions/0007-retries/` would be the tool quietly filing a document somewhere other than
+  // where it was addressed — and it would mint a *second* document the moment somebody wrote
+  // `retries` meaning to replace `0003-retries`. So the name it would have to be is named, and
+  // the author renames a folder.
+  //
+  // Only new documents are asked. One that replaces an existing document is already filed, and
+  // its name is not this change's question — which is also what lets a corpus adopt a pattern
+  // without renaming what it already has.
+  const policy = await readConfig(corpus.config);
+  for (const { document, at } of located) {
+    if (document.replaces) continue;
+    // A bundled document is new when its *folder* is. `replaces` is per file, and a second file
+    // arriving into a folder already in the base is not a new document — refusing there would
+    // refuse an author for adding an `architecture.md` to a specification a year old.
+    if (area(at.area)?.bundled === true && existsSync(join(root, at.area, at.name))) continue;
+
+    const pattern = patternFor(policy, at.area);
+    if (!needsOrdinal(pattern) || matchName(pattern, at.name) !== undefined) continue;
+
+    const ordinal = Math.max(0, ...(await takenOrdinals(root, at.area, pattern))) + 1;
+    fail(
+      `${at.node} is not the name this corpus mints`,
+      `${at.area}/ is named "${pattern}" — rename the folder to ${renderName(pattern, { slug: at.name, ordinal })} in ${dir}/${CHANGES}/${slug}/${CHANGE_PUBLISH}/${at.area}/`,
     );
   }
 

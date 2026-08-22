@@ -1730,6 +1730,60 @@ refute "a corpus with no policy is unchanged" "0001" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
   node '"$BIN"' change new "Plain name"'
 
+# The area a policy most wants ordered is the one nothing mints. A published document takes its
+# name from the folder the author wrote inside `publish/`, so until this a corpus could order
+# every name it handed out and none of the documents those names were handed out for.
+numbered() {
+  seeded
+  printf 'root: docs\nlang: en\nnaming:\n  specs: "{ordinal:4}-{slug}"\n' > mollyguard.yml
+}
+check "a published name off the pattern is refused" 1 "is not the name this corpus mints" -- sh -c '
+  '"$(declare -f seeded)"'; '"$(declare -f numbered)"'; numbered
+  node '"$BIN"' publish fed'
+# Refused and never renamed. Filing it as `0001-` would be the tool putting a document somewhere
+# other than where it was addressed, so the name it has to be is named and a person moves the
+# folder — which is also the only way the author sees the number before it is permanent.
+check "and it names the folder to write instead"   1 "0001-feeding-schedule" -- sh -c '
+  '"$(declare -f seeded)"'; '"$(declare -f numbered)"'; numbered
+  node '"$BIN"' publish fed'
+check "and nothing was published"                  1 "" -- sh -c '
+  '"$(declare -f seeded)"'; '"$(declare -f numbered)"'; numbered
+  node '"$BIN"' publish fed >/dev/null 2>&1
+  test -d docs/specs/feeding-schedule'
+check "a name on the pattern goes through"         0 "specs/0001-feeding-schedule" -- sh -c '
+  '"$(declare -f seeded)"'; '"$(declare -f numbered)"'; numbered
+  mv docs/changes/fed/publish/specs/feeding-schedule \
+     docs/changes/fed/publish/specs/0001-feeding-schedule
+  node '"$BIN"' publish fed'
+# The migration, from the publishing side: a corpus adopting a pattern keeps every document it
+# already has, and a change editing one is never asked to rename it.
+check "replacing a document keeps its old name"    0 "specs/feeding-schedule/spec.md" -- sh -c '
+  '"$(declare -f seeded)"'; seeded
+  node '"$BIN"' publish fed >/dev/null
+  printf "root: docs\nlang: en\nnaming:\n  specs: \"{ordinal:4}-{slug}\"\n" > mollyguard.yml
+  node '"$BIN"' change new "Later" --name later --capability feeding >/dev/null
+  mkdir -p docs/changes/later/publish/specs/feeding-schedule
+  printf -- "---\ntitle: Cats are fed twice a day\nlang: en\ncapability: feeding\n---\n\nAt 09:00.\n" \
+    > docs/changes/later/publish/specs/feeding-schedule/spec.md
+  node '"$BIN"' publish later'
+# A document is bundled, so *new* is its folder rather than each file in it. A change adding an
+# architecture to a specification that has been in the base for a year is not naming anything.
+check "a file joining an existing document is not new" 0 "architecture.md" -- sh -c '
+  '"$(declare -f seeded)"'; seeded
+  rm docs/changes/fed/publish/specs/feeding-schedule/architecture.md
+  node '"$BIN"' publish fed >/dev/null
+  printf "root: docs\nlang: en\nnaming:\n  specs: \"{ordinal:4}-{slug}\"\n" > mollyguard.yml
+  node '"$BIN"' change new "Later" --name later --capability feeding >/dev/null
+  mkdir -p docs/changes/later/publish/specs/feeding-schedule
+  printf -- "# How it is built\n\nA cron entry.\n" \
+    > docs/changes/later/publish/specs/feeding-schedule/architecture.md
+  node '"$BIN"' publish later >/dev/null
+  ls docs/specs/feeding-schedule'
+# And the corpus that declares nothing publishes what it always published.
+refute "a publication with no policy is untouched" "is not the name this corpus mints" -- sh -c '
+  '"$(declare -f seeded)"'; seeded
+  node '"$BIN"' publish fed'
+
 # ------------------------------------------------------------------ the commit trailer
 #
 # A commit naming a change must name one that exists. The half that is the tool's, because the

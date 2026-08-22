@@ -6,3 +6,20 @@ root: docs
 
 # `lang` is the language the specifications are written in.
 lang: en
+
+# How names are minted, per area. `{ordinal:n}` is the next unused number in that area,
+# zero-padded to n — unused meaning unused ever: what is in the directory, what was archived out
+# of it, and what the ledger remembers of something deleted by hand.
+#
+# Only `changes`, because a change is an event: it enters once, in an order, and the record of it
+# outlives the folder. `specs` is deliberately absent — the knowledge base is read by topic
+# rather than in order, and a document there is renamed when what it is about is renamed. A
+# number on it would be a claim about sequence that nothing reads, and one that would survive the
+# rename it should not.
+#
+# The thirteen changes already here keep their bare names. A folder renamed outside the tool
+# orphans everything the ledger recorded against the old name, and a history is worth more than a
+# tidy listing. So numbering starts where the policy does: mint the next change once with
+# `--name 0014-<slug>`, and the tool carries on from 0015 by itself.
+naming:
+  changes: '{ordinal:4}-{slug}'
