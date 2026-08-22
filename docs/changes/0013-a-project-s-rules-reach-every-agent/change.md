@@ -52,5 +52,5 @@ is process.
 
 Filed against `specs/agent-instructions`, which states what an installed skill holds and what it
 must never hold. This adds a pointer and holds to the second half — no corpus content is copied
-into a skill. `a-corpus-is-found-not-passed` alters the same document; whichever publishes second
+into a skill. `0012-a-corpus-is-found-not-passed` alters the same document; whichever publishes second
 carries the other's wording.

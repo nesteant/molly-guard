@@ -17,9 +17,10 @@ lang: en
 # number on it would be a claim about sequence that nothing reads, and one that would survive the
 # rename it should not.
 #
-# The thirteen changes already here keep their bare names. A folder renamed outside the tool
-# orphans everything the ledger recorded against the old name, and a history is worth more than a
-# tidy listing. So numbering starts where the policy does: mint the next change once with
-# `--name 0014-<slug>`, and the tool carries on from 0015 by itself.
+# The thirteen changes already here were renumbered into it, oldest first by the `created` line
+# that records each one. The ledger was relabelled in the same commit, and had to be: a folder
+# renamed on its own orphans every transition recorded against the old name, and `molly status`
+# reports exactly that. There is no rename verb, so this was done once, by hand, with the whole
+# corpus in one diff — it is a migration and not a habit.
 naming:
   changes: '{ordinal:4}-{slug}'

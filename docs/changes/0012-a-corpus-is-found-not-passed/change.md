@@ -56,5 +56,5 @@ the old meaning — and it is not a deprecation.
 Filed against `specs/agent-instructions`, which tells an agent the corpus is *the directory
 holding `mollyguard.yml`* and points at `docs/mollyguard.yml` for the language. Both sentences
 become false here, and they are exactly the sentences an agent acts on.
-`a-project-s-rules-reach-every-agent` alters the same document; whichever publishes second carries
+`0013-a-project-s-rules-reach-every-agent` alters the same document; whichever publishes second carries
 the other's wording.

@@ -68,7 +68,7 @@ it is meant to be counting.
 
 Filed against `specs/creating-a-change`, whose *The name* section states that a directory name is
 minted from the title and that `--name` overrides it. That stays true and gains a third answer
-between them: the corpus's own pattern. `the-plan-and-the-corpus-agree` alters the same document,
+between them: the corpus's own pattern. `0011-the-plan-and-the-corpus-agree` alters the same document,
 so whichever of the two publishes second carries the other's wording as well — a specification is
 replaced whole, and there is no delta format to merge two edits with.
 
