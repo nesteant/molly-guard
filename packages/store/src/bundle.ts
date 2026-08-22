@@ -82,6 +82,7 @@ export async function writeChangeBundle(
               // Omitted entirely when nobody declared one: a blank key reads as "answered,
               // nothing" where the truth is "not answered".
               capability: record.capability,
+              realises: record.realises,
               state: INITIAL_STATE,
               alters: record.alters,
             },
@@ -171,6 +172,7 @@ function recordFrom(fields: Readonly<Record<string, unknown>>, slug: string): Ch
   const lang = fields['lang'];
   const kind = fields['kind'];
   const capability = fields['capability'];
+  const realises = fields['realises'];
   const alters = fields['alters'];
 
   return {
@@ -182,6 +184,7 @@ function recordFrom(fields: Readonly<Record<string, unknown>>, slug: string): Ch
     // Whatever it says, resolved by the caller against what is on disk. A name that no longer
     // exists is a finding rather than something to drop here, where nothing could report it.
     capability: typeof capability === 'string' && capability.trim() !== '' ? capability : undefined,
+    realises: typeof realises === 'string' && realises.trim() !== '' ? realises : undefined,
     alters: Array.isArray(alters) ? alters.filter((a): a is string => typeof a === 'string') : [],
   };
 }

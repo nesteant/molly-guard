@@ -59,11 +59,12 @@ export interface Area {
 /**
  * The areas something else has to name.
  *
- * A directory name written twice is a directory name that gets renamed once. These are the two
+ * A directory name written twice is a directory name that gets renamed once. These are the ones
  * a command or a store module refers to by hand; the rest are reached through `AREAS`.
  */
 export const CAPABILITIES = 'capabilities';
 export const CHANGES = 'changes';
+export const ROADMAP = 'roadmap';
 
 export const AREAS: readonly Area[] = [
   {
@@ -86,7 +87,7 @@ export const AREAS: readonly Area[] = [
     publishable: true,
   },
   {
-    name: 'roadmap',
+    name: ROADMAP,
     describes: 'intent that has not become a change yet',
     bundled: false,
   },

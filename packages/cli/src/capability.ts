@@ -10,42 +10,36 @@
  * somebody fills in.
  */
 
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { BUILT_IN_TEMPLATES, isSlug, slugify } from '@mollyguard/core';
-import { CONFIG_FILE, writeCapability } from '@mollyguard/store';
+import { BUILT_IN_TEMPLATES, CAPABILITIES } from '@mollyguard/core';
+import { Corpus, writeCapability } from '@mollyguard/store';
+import { langFor } from './lang';
+import { nameFor } from './naming';
 import { dim, fail, green, info, teal } from './ui';
 
 export interface NewCapabilityOptions {
   readonly title: string;
   readonly name?: string | undefined;
-  readonly lang: string;
+  /** As typed. Resolved against the corpus when absent. */
+  readonly lang?: string | undefined;
 }
 
 export async function newCapabilityCommand(
-  root: string,
-  dir: string,
+  corpus: Corpus,
   options: NewCapabilityOptions,
 ): Promise<number> {
-  if (!existsSync(join(root, CONFIG_FILE))) {
-    fail(`no corpus at ${dir}/`, 'run `molly init` first, or pass --root <dir>');
-  }
+  const { root, dir } = corpus;
   if (!options.title.trim()) {
     fail('molly capability new "<title>"', 'The title is what every listing shows.');
   }
 
-  const slug = options.name ?? slugify(options.title);
-  if (!isSlug(slug)) {
-    fail(
-      `"${options.title}" does not reduce to a name`,
-      'Names are lowercase ASCII so they survive translation. Pass --name <name> to choose one.',
-    );
-  }
+  const slug = await nameFor(corpus, CAPABILITIES, options.title, options.name);
+
+  const lang = await langFor(corpus, options.lang);
 
   const written = await writeCapability(
     root,
     slug,
-    { title: options.title, lang: options.lang },
+    { title: options.title, lang },
     BUILT_IN_TEMPLATES,
   );
 

@@ -9,28 +9,28 @@
  * form for ever — a slice supplies the form, and core supplies the sections.
  */
 
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   BUILT_IN_TEMPLATES,
   CAPABILITIES,
   CHANGES,
+  ROADMAP,
   CHANGE_KINDS,
   ChangeKind,
   INITIAL_STATE,
   isChangeKind,
-  isSlug,
   qualify,
-  slugify,
   unqualify,
 } from '@mollyguard/core';
 import {
-  CONFIG_FILE,
+  Corpus,
   appendEvent,
   readCapabilities,
+  readRoadmap,
   writeChangeBundle,
 } from '@mollyguard/store';
 import { identity } from './identity';
+import { langFor } from './lang';
+import { nameFor } from './naming';
 import { bold, dim, fail, green, info, teal } from './ui';
 
 export interface NewChangeOptions {
@@ -39,43 +39,52 @@ export interface NewChangeOptions {
   readonly kind?: string | undefined;
   /** Bare or qualified, as typed. Resolved before anything is written. */
   readonly capability?: string | undefined;
+  /** The roadmap entry this is the specific form of. */
+  readonly realises?: string | undefined;
   /** Knowledge-base documents this alters. Empty for a change that introduces new truth. */
   readonly alters: readonly string[];
-  readonly lang: string;
+  /** As typed. Resolved against the corpus when absent. */
+  readonly lang?: string | undefined;
   /** ISO-8601. Read by the caller, because core and store are handed their timestamps. */
   readonly at: string;
 }
 
 export async function newChangeCommand(
-  root: string,
-  dir: string,
+  corpus: Corpus,
   options: NewChangeOptions,
 ): Promise<number> {
-  if (!existsSync(join(root, CONFIG_FILE))) {
-    fail(`no corpus at ${dir}/`, 'run `molly init` first, or pass --root <dir>');
-  }
+  const { root, dir } = corpus;
   if (!options.title.trim()) {
     fail('molly change new "<title>"', 'The title is what every listing shows.');
   }
 
   const kind: ChangeKind = options.kind === undefined ? 'feature' : requireKind(options.kind);
-  const slug = options.name ?? slugify(options.title);
-  if (!isSlug(slug)) {
-    fail(
-      `"${options.title}" does not reduce to a name`,
-      'Names are lowercase ASCII so they survive translation. Pass --name <name> to choose one.',
-    );
-  }
+  const slug = await nameFor(corpus, CHANGES, options.title, options.name);
 
   // Resolved before anything is written, so a name that does not exist leaves no half-made
   // bundle behind — the same property the collision check has, and the same reason for it.
   const capability =
     options.capability === undefined ? undefined : await requireCapability(root, options.capability);
 
+  // Checked the same way and for the same reason: the moment to catch a typo is while the author
+  // is still at the terminal. `molly status` catches the other direction, where the entry is
+  // retired later and the reference is left pointing at nothing.
+  const realises =
+    options.realises === undefined ? undefined : await requireEntry(root, options.realises);
+
+  const lang = await langFor(corpus, options.lang);
+
   const written = await writeChangeBundle(
     root,
     slug,
-    { title: options.title, lang: options.lang, kind, capability, alters: options.alters },
+    {
+      title: options.title,
+      lang,
+      kind,
+      capability,
+      realises,
+      alters: options.alters,
+    },
     BUILT_IN_TEMPLATES,
   );
 
@@ -121,6 +130,26 @@ export async function newChangeCommand(
 function requireKind(value: string): ChangeKind {
   if (isChangeKind(value)) return value;
   fail(`"${value}" is not a kind of change`, `one of: ${CHANGE_KINDS.join(', ')}`);
+}
+
+/**
+ * The roadmap entry this change realises, checked against what is on disk.
+ *
+ * An entry is a note rather than a governed unit, so this refuses a name that is not there and
+ * nothing more — it does not ask whether the entry is ready, or whether anything it mentions has
+ * shipped first. Ordering planned work against itself is a planning tool's job.
+ */
+async function requireEntry(root: string, given: string): Promise<string> {
+  const slug = unqualify(ROADMAP, given);
+  const { entries } = await readRoadmap(root);
+  if (entries.some((entry) => entry.slug === slug)) return slug;
+
+  fail(
+    `no roadmap entry named "${slug}"`,
+    entries.length === 0
+      ? `there are none — an entry is a document you write in ${ROADMAP}/`
+      : `one of: ${entries.map((e) => e.slug).join(', ')}`,
+  );
 }
 
 /**

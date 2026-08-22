@@ -5,8 +5,8 @@ disable-model-invocation: true
 
 # Advance a change
 
-The corpus is the directory holding `mollyguard.yml` — `docs/` unless a command was
-given `--root <dir>`. Paths below assume the default; read them against the root you find.
+`mollyguard.yml` sits at the top of the repository and names the corpus directory —
+`docs/` unless it says otherwise, and is found from anywhere inside. Paths below assume that.
 
 1. `molly status` to see where it is, and whether anything disagrees with the ledger.
 2. `molly move <change> <state>`, choosing the next state in the sequence unless told otherwise:

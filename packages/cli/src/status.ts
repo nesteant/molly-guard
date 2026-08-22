@@ -17,11 +17,10 @@
  * to keep.
  */
 
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   CHANGES,
   CHANGE_KINDS,
+  ROADMAP,
   STATES,
   State,
   TERMINAL,
@@ -30,13 +29,14 @@ import {
   stateOf,
 } from '@mollyguard/core';
 import {
-  CONFIG_FILE,
+  Corpus,
   readCapabilities,
   readChanges,
   readHistory,
+  readRoadmap,
   readArchivedChanges,
 } from '@mollyguard/store';
-import { amber, bold, dim, fail, info, red, teal, warn } from './ui';
+import { amber, bold, dim, info, red, teal, warn } from './ui';
 
 /** What a change filed under nothing shows. Blank would read as a rendering that failed. */
 const UNFILED = '—';
@@ -54,7 +54,13 @@ export interface StatusOptions {
  * and failing a build over history somebody never had is refusing the past.
  */
 export interface Finding {
-  readonly kind: 'unreadable' | 'drift' | 'dangling-capability' | 'unrecorded';
+  readonly kind:
+    | 'unreadable'
+    | 'drift'
+    | 'dangling-capability'
+    | 'unrecorded'
+    | 'realised-roadmap'
+    | 'dangling-roadmap';
   /** The change it is about, where it is about one. */
   readonly change?: string;
   readonly message: string;
@@ -77,6 +83,8 @@ export interface ReportedChange {
   readonly state: State;
   readonly kind: string;
   readonly capability: string | undefined;
+  /** The roadmap entry this change is the specific form of, where it names one. */
+  readonly realises: string | undefined;
   readonly title: string;
   /** Published and moved out of flight. Kept in the listing so the base reads whole. */
   readonly archived: boolean;
@@ -100,18 +108,28 @@ export interface Report {
   readonly corpus: string;
   readonly ok: boolean;
   readonly capabilities: readonly { readonly name: string; readonly title: string }[];
+  /**
+   * Intent that has not become a change yet, which is read while planning.
+   *
+   * Here because a report that omits an area is believed: somebody planning against this
+   * concludes nothing was intended and drafts a change contradicting an entry sitting in the
+   * corpus. An entry has no state — it is open, or it is answered by a change that landed, and
+   * neither is recorded — so unlike a change it carries nothing folded from the ledger.
+   */
+  readonly roadmap: readonly {
+    readonly name: string;
+    readonly title: string;
+    readonly capability: string | undefined;
+  }[];
   readonly changes: readonly ReportedChange[];
   readonly findings: readonly Finding[];
 }
 
 export async function statusCommand(
-  root: string,
-  dir: string,
+  corpus: Corpus,
   options: StatusOptions = { json: false },
 ): Promise<number> {
-  if (!existsSync(join(root, CONFIG_FILE))) {
-    fail(`no corpus at ${dir}/`, 'run `molly init` first, or pass --root <dir>');
-  }
+  const { root, dir } = corpus;
 
   const report = await gather(root, dir);
 
@@ -139,6 +157,7 @@ async function gather(root: string, dir: string): Promise<Report> {
   const inFlight = await readChanges(root);
   const archived = await readArchivedChanges(root);
   const grouping = await readCapabilities(root);
+  const intended = await readRoadmap(root);
   const history = await readHistory(root);
 
   const findings: Finding[] = [];
@@ -163,7 +182,15 @@ async function gather(root: string, dir: string): Promise<Report> {
   // still resolves the references pointing at it, and the ledger is read leniently by design —
   // a line written before a field existed is understood rather than refused. Reported, because
   // what cannot be read is said out loud; not failed, because nothing is missing from the answer.
-  for (const message of [...grouping.unreadable, ...history.unreadable]) {
+  //
+  // A roadmap entry joins them, and the contrast with `changes/` above is the point: an entry is
+  // a note, not a governed unit. Failing a build over a broken frontmatter block in a planning
+  // note would be refusing somebody's notes for existing.
+  for (const message of [
+    ...grouping.unreadable,
+    ...intended.unreadable,
+    ...history.unreadable,
+  ]) {
     findings.push({ kind: 'unreadable', message, fails: false });
   }
 
@@ -178,6 +205,7 @@ async function gather(root: string, dir: string): Promise<Report> {
       state,
       kind: bundle.record.kind,
       capability: bundle.record.capability,
+      realises: bundle.record.realises,
       title: bundle.record.title,
       archived: false,
       declared: bundle.declared,
@@ -208,6 +236,19 @@ async function gather(root: string, dir: string): Promise<Report> {
       });
     }
 
+    // A change still in flight naming an entry nobody can find. Only while in flight: an
+    // archived change pointing at a retired entry is the *finished* shape of this link, not a
+    // broken one, and reporting it would turn every correct publication into a finding.
+    const realises = bundle.record.realises;
+    if (realises !== undefined && !intended.entries.some((entry) => entry.slug === realises)) {
+      findings.push({
+        kind: 'dangling-roadmap',
+        change: bundle.slug,
+        message: `${bundle.slug} realises ${realises}, which is not in ${ROADMAP}/`,
+        fails: false,
+      });
+    }
+
     // Declaring nothing is an answer. Declaring something that is not there is a broken
     // reference, and the author is long gone — so it is named rather than assumed to be a typo.
     const capability = bundle.record.capability;
@@ -230,9 +271,32 @@ async function gather(root: string, dir: string): Promise<Report> {
       state: TERMINAL,
       kind: bundle.record.kind,
       capability: bundle.record.capability,
+      realises: bundle.record.realises,
       title: bundle.record.title,
       archived: true,
       declared: bundle.declared,
+    });
+  }
+
+  // The plan and the corpus, asked whether they still agree.
+  //
+  // A change publishes and its roadmap entry survives, so the plan goes on planning something
+  // that already exists — the failure that made a repository maintain a second model of its own
+  // work by hand. Nothing here retires the entry: it is somebody's planning note, the tool does
+  // not write prose, and deleting a document because a reference somewhere else changed state is
+  // exactly the unasked-for write this whole product is a cover over. It is said, every time
+  // `status` runs, until somebody retires it.
+  //
+  // Reported and not failing, for the reason every roadmap finding is: an entry is a note rather
+  // than a governed unit, and failing a build over a planning document nobody retired would be
+  // refusing somebody's notes for existing.
+  for (const entry of intended.entries) {
+    const by = changes.find((change) => change.archived && change.realises === entry.slug);
+    if (by === undefined) continue;
+    findings.push({
+      kind: 'realised-roadmap',
+      message: `${ROADMAP}/${entry.slug} was realised by ${by.node}, which has published — retire it`,
+      fails: false,
     });
   }
 
@@ -240,6 +304,11 @@ async function gather(root: string, dir: string): Promise<Report> {
     corpus: dir,
     ok: !findings.some((finding) => finding.fails),
     capabilities: grouping.capabilities.map((c) => ({ name: c.slug, title: c.record.title })),
+    roadmap: intended.entries.map((e) => ({
+      name: e.slug,
+      title: e.record.title,
+      capability: e.record.capability,
+    })),
     changes,
     findings,
   };
@@ -255,6 +324,15 @@ function render(report: Report, dir: string): void {
   if (report.capabilities.length > 0) {
     info();
     info(`  ${dim('capabilities')}  ${report.capabilities.map((c) => c.name).join(', ')}`);
+  }
+
+  // On the line under them, and by name for the same reason: the directory is read while
+  // planning, and a planner who has to run `ls` to find out what is already intended will
+  // eventually not run it. Names rather than titles, because a name is what every other command
+  // takes and what a change would say it realises.
+  if (report.roadmap.length > 0) {
+    if (report.capabilities.length === 0) info();
+    info(`  ${dim('roadmap')}       ${report.roadmap.map((e) => e.name).join(', ')}`);
   }
 
   if (report.changes.length === 0) {
@@ -347,6 +425,22 @@ function render(report: Report, dir: string): void {
     info(`  ${amber('!')} ${dangling.length} change(s) name a capability that does not exist`);
     for (const finding of dangling) info(`    ${dim(finding.message)}`);
     info(dim('    Create it with `molly capability new`, or correct `capability:` in the change.'));
+    info();
+  }
+
+  // The plan and the corpus disagreeing about whether something has shipped. Not a failure: the
+  // entry is somebody's planning note, and the tool reports rather than retires it.
+  const realised = listing('realised-roadmap');
+  if (realised.length > 0) {
+    info(`  ${dim(`${realised.length} roadmap entry(s) have been realised and are still here`)}`);
+    for (const finding of realised) info(`    ${dim(finding.message)}`);
+    info();
+  }
+
+  const orphaned = listing('dangling-roadmap');
+  if (orphaned.length > 0) {
+    info(`  ${dim(`${orphaned.length} change(s) realise a roadmap entry that is not there`)}`);
+    for (const finding of orphaned) info(`    ${dim(finding.message)}`);
     info();
   }
 

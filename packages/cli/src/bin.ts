@@ -12,11 +12,13 @@ import { join } from 'node:path';
 import { agentsCommand } from './agents';
 import { newCapabilityCommand } from './capability';
 import { newChangeCommand } from './change';
+import { commitMessageCommand, hooksCommand } from './commit';
 import { initCommand } from './init';
 import { moveCommand } from './move';
 import { publishCommand } from './publish';
+import { newRoadmapCommand } from './roadmap';
 import { statusCommand } from './status';
-import { DEFAULT_ROOT } from '@mollyguard/store';
+import { Corpus, DEFAULT_ROOT, locateCorpus, readConfig } from '@mollyguard/store';
 import { bold, dim, fail, info, teal, warn } from './ui';
 
 interface Args {
@@ -36,6 +38,19 @@ interface Args {
  * was meant is worse than one that is refused.
  */
 const BOOLEAN: ReadonlySet<string> = new Set(['dry-run', 'check', 'help', 'version', 'json']);
+
+/**
+ * The commands that do not act on a corpus, and so are not refused for standing outside one.
+ *
+ * `agents` writes the instructions agent tools read, in the directories those tools look in —
+ * outside the corpus by design, and deliberately holding nothing from it, so it works in a
+ * repository that has not been initialised yet. `hooks` writes into `.git` for the same kind of
+ * reason. `init` is not here because it is handled before this, being the one that *creates* one.
+ *
+ * A set rather than a chain of comparisons, because the next command added has to answer this
+ * question somewhere, and a list is a place to answer it.
+ */
+const OUTSIDE: ReadonlySet<string> = new Set(['agents', 'hooks']);
 
 /** Taken everywhere, so no command has to list them. */
 const GLOBAL: readonly string[] = ['root', 'help', 'version'];
@@ -61,10 +76,13 @@ const GLOBAL: readonly string[] = ['root', 'help', 'version'];
 const FLAGS: Readonly<Record<string, readonly string[]>> = {
   init: ['lang'],
   capability: ['name', 'lang'],
-  change: ['name', 'kind', 'capability', 'alters', 'lang'],
+  change: ['name', 'kind', 'capability', 'realises', 'alters', 'lang'],
   move: [],
   publish: ['dry-run'],
   status: ['json'],
+  'commit-msg': [],
+  hooks: [],
+  roadmap: ['name', 'capability', 'lang'],
   agents: ['tools', 'check'],
   version: [],
   help: [],
@@ -128,10 +146,13 @@ const HELP: readonly (readonly [string, string])[] = [
   ['molly init [--lang <tag>]', 'scaffold a corpus: every area, each explaining itself'],
   ['molly capability new "<title>"', 'a grouping: what the product is responsible for'],
   ['molly change new "<title>"', 'the four documents one change is made of'],
-  ['molly move <change> <state>', 'one edge of the lifecycle, forwards or back'],
-  ['molly publish <change>', 'file its documents into the knowledge base'],
+  ['molly roadmap new "<title>"', 'intent that has not become a change yet'],
+  ['molly move [<change>] [<state>]', 'one edge of the lifecycle, forwards or back'],
+  ['molly publish [<change>]', 'file its documents into the knowledge base'],
   ['molly status [--json]', 'every change, and where it is; --json for a reader that is not a person'],
   ['molly agents [--tools <list>]', 'the skills an agent reads; --check verifies them'],
+  ['molly commit-msg <file>', 'verify a commit message names a change that exists'],
+  ['molly hooks install', 'write the commit-msg hook that runs it'],
   // Listed although it is what is being read. Every command named in a generated README, skill
   // or command file must appear here — a name missing from this list is one the harness reports
   // as not being a command, and that check is only worth having if it is complete.
@@ -167,7 +188,7 @@ function version(): string {
 }
 
 /** `molly change <verb>` — grouped because they all operate on one bundle. */
-async function change(root: string, dir: string, args: Args): Promise<number> {
+async function change(corpus: Corpus, args: Args): Promise<number> {
   const verb = args.positional[0];
   if (verb !== 'new') {
     warn('molly change new "<title>"');
@@ -183,29 +204,46 @@ async function change(root: string, dir: string, args: Args): Promise<number> {
     if (value !== undefined && !value.startsWith('--')) alters.push(value);
   }
 
-  return newChangeCommand(root, dir, {
+  return newChangeCommand(corpus, {
     title: args.positional.slice(1).join(' '),
     name: flag(args, 'name'),
     kind: flag(args, 'kind'),
     capability: flag(args, 'capability'),
+    realises: flag(args, 'realises'),
     alters,
-    lang: flag(args, 'lang') ?? 'en',
+    lang: flag(args, 'lang'),
     at: new Date().toISOString(),
   });
 }
 
+/** `molly roadmap <verb>` — the planned stage, which is a document and no lifecycle. */
+async function roadmap(corpus: Corpus, args: Args): Promise<number> {
+  const verb = args.positional[0];
+  if (verb !== 'new') {
+    warn('molly roadmap new "<title>"');
+    return 1;
+  }
+
+  return newRoadmapCommand(corpus, {
+    title: args.positional.slice(1).join(' '),
+    name: flag(args, 'name'),
+    capability: flag(args, 'capability'),
+    lang: flag(args, 'lang'),
+  });
+}
+
 /** `molly capability <verb>` — grouped like `molly change`, though there is one verb so far. */
-async function capability(root: string, dir: string, args: Args): Promise<number> {
+async function capability(corpus: Corpus, args: Args): Promise<number> {
   const verb = args.positional[0];
   if (verb !== 'new') {
     warn('molly capability new "<title>"');
     return 1;
   }
 
-  return newCapabilityCommand(root, dir, {
+  return newCapabilityCommand(corpus, {
     title: args.positional.slice(1).join(' '),
     name: flag(args, 'name'),
-    lang: flag(args, 'lang') ?? 'en',
+    lang: flag(args, 'lang'),
   });
 }
 
@@ -224,26 +262,62 @@ async function main(): Promise<void> {
   // refused while refusing is still free — after a write it is only an apology.
   checkFlags(args);
 
-  const dir = flag(args, 'root') ?? DEFAULT_ROOT;
+  // Before anything is located. An unknown command has its own better message below, and
+  // answering "no corpus here" to `molly frobnicate` answers a question nobody asked — the same
+  // argument `checkFlags` makes about refusing a flag before naming an unknown command.
+  if (FLAGS[args.command] === undefined) {
+    warn(`unknown command "${args.command}" — run \`molly help\``);
+    process.exit(1);
+  }
 
-  const root = join(process.cwd(), dir);
+  const given = flag(args, 'root');
+
+  // `init` creates rather than finds, so it is the one command that does not look for a corpus —
+  // it is handed the working directory and the name of the directory to make.
+  if (args.command === 'init') {
+    process.exit(await initCommand(process.cwd(), given ?? DEFAULT_ROOT, flag(args, 'lang')));
+  }
+
+  // Found once, here, rather than by seven commands each repeating the same guard with the same
+  // message.
+  const corpus = OUTSIDE.has(args.command) ? undefined : await locateCorpus(process.cwd(), given);
+  if (corpus === undefined && !OUTSIDE.has(args.command)) {
+    fail(
+      'no corpus here',
+      `nothing names one in ${process.cwd()} or above it — run \`molly init\`, or pass --root <dir>`,
+    );
+  }
+  const found = corpus as Corpus;
+
+  // Read once, here, and refused before any command runs. A configuration that will not parse
+  // used to degrade silently into the old layout — `root:` could not be read, so the corpus was
+  // taken to be the directory holding the file, and `molly status` reported an empty corpus and
+  // exited 0 while the real one sat untouched beside it. Reporting success over something it
+  // never looked at is the one failure this tool exists to prevent.
+  if (found !== undefined) {
+    const problems = (await readConfig(found.config)).problems;
+    if (problems.length > 0) {
+      fail(problems[0] as string, `fix ${found.config}, or delete it and run \`molly init\``);
+    }
+  }
 
   switch (args.command) {
-    case 'init':
-      process.exit(await initCommand(root, dir, flag(args, 'lang') ?? 'en', process.cwd()));
-      break;
 
     case 'capability':
-      process.exit(await capability(root, dir, args));
+      process.exit(await capability(found, args));
       break;
 
     case 'change':
-      process.exit(await change(root, dir, args));
+      process.exit(await change(found, args));
+      break;
+
+    case 'roadmap':
+      process.exit(await roadmap(found, args));
       break;
 
     case 'move':
       process.exit(
-        await moveCommand(root, dir, {
+        await moveCommand(found, {
           change: args.positional[0],
           to: args.positional[1],
           // The clock is read here and nowhere deeper. Core is handed the timestamp, so the
@@ -255,7 +329,7 @@ async function main(): Promise<void> {
 
     case 'publish':
       process.exit(
-        await publishCommand(root, dir, {
+        await publishCommand(found, {
           change: args.positional[0],
           dryRun: args.flags.has('dry-run'),
           at: new Date().toISOString(),
@@ -272,8 +346,22 @@ async function main(): Promise<void> {
       );
       break;
 
+    case 'commit-msg':
+      process.exit(await commitMessageCommand(found, { file: args.positional[0] }));
+      break;
+
+    case 'hooks': {
+      const verb = args.positional[0];
+      if (verb !== 'install') {
+        warn('molly hooks install');
+        process.exit(1);
+      }
+      process.exit(await hooksCommand(process.cwd(), given ?? DEFAULT_ROOT));
+      break;
+    }
+
     case 'status':
-      process.exit(await statusCommand(root, dir, { json: args.flags.has('json') }));
+      process.exit(await statusCommand(found, { json: args.flags.has('json') }));
       break;
 
     default:

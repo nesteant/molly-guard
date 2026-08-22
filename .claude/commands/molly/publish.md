@@ -5,8 +5,8 @@ disable-model-invocation: true
 
 # Publish a change
 
-The corpus is the directory holding `mollyguard.yml` — `docs/` unless a command was
-given `--root <dir>`. Paths below assume the default; read them against the root you find.
+`mollyguard.yml` sits at the top of the repository and names the corpus directory —
+`docs/` unless it says otherwise, and is found from anywhere inside. Paths below assume that.
 
 1. Read the change's four documents, and the knowledge-base documents it alters.
 2. Write `docs/changes/<change>/publish/`, mirroring the corpus. Each file is the **whole** new

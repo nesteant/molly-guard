@@ -4,8 +4,8 @@ description: How this corpus works - where truth lives and what may never be edi
 
 # MollyGuard
 
-The corpus is the directory holding `mollyguard.yml` — `docs/` unless a command was
-given `--root <dir>`. Paths below assume the default; read them against the root you find.
+`mollyguard.yml` sits at the top of the repository and names the corpus directory —
+`docs/` unless it says otherwise, and is found from anywhere inside. Paths below assume that.
 
 `docs/specs/` and `docs/decisions/` are the knowledge base: what the product is currently
 believed to be. **Nothing enters it except by publishing a change.** Never edit them directly.
@@ -14,9 +14,13 @@ believed to be. **Nothing enters it except by publishing a change.** Never edit 
 
 ## Read before writing
 
-1. `molly status` — what is in flight, and the capabilities that exist.
+1. `molly status` — what is in flight, the capabilities that exist, and what is already
+   intended in `docs/roadmap/`.
 2. Every file in `docs/decisions/` — each is a constraint your work must respect.
-3. `lang:` in `docs/mollyguard.yml` — write all document prose in that language.
+3. `docs/conventions.md`, if it is there — this project's own rules for writing in this corpus.
+   The rest of this skill is how MollyGuard works; that file is how *this* repository uses it,
+   and where the two differ it wins.
+4. `lang:` in `docs/mollyguard.yml` — write all document prose in that language.
 
 ## The flow
 

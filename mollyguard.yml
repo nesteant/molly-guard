@@ -1,0 +1,8 @@
+# MollyGuard corpus configuration.
+#
+# This file sits at the top of the repository and names the directory the corpus is in, so every
+# command finds it from anywhere inside — there is nothing to pass on the command line.
+root: docs
+
+# `lang` is the language the specifications are written in.
+lang: en

@@ -10,7 +10,7 @@
  */
 
 import { MoveChoice, StateChoice } from '@mollyguard/core';
-import { dim } from './ui';
+import { dim, fail } from './ui';
 
 /**
  * The prompt package is ESM and this build is CommonJS, so it is imported where it is used.
@@ -30,6 +30,34 @@ export function interactive(): boolean {
 /** Thrown by the prompt on Ctrl+C. Abandoning is not a failure of the tool. */
 export function abandoned(cause: unknown): boolean {
   return cause instanceof Error && cause.name === 'ExitPromptError';
+}
+
+/**
+ * The change a command is about, picked when it was not named.
+ *
+ * Shared rather than written per command: `move` and `publish` both take one change as their
+ * first argument, and two copies of "ask, or refuse with the list" is two places for the refusal
+ * to drift. The usage line differs per command, so it is passed in.
+ */
+export async function chooseChange(
+  choices: readonly MoveChoice[],
+  usage: string,
+): Promise<MoveChoice> {
+  if (!interactive()) {
+    fail(
+      usage,
+      `nothing is reading input, so there is nobody to ask. Changes: ${choices
+        .map((choice) => choice.slug)
+        .join(', ')}`,
+    );
+  }
+  try {
+    const slug = await pickChange(choices);
+    return choices.find((choice) => choice.slug === slug) as MoveChoice;
+  } catch (cause) {
+    if (abandoned(cause)) process.exit(1);
+    throw cause;
+  }
 }
 
 export async function pickChange(choices: readonly MoveChoice[]): Promise<string> {

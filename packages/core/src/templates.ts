@@ -25,7 +25,7 @@ import { ChangePart } from './change';
  * One key rather than a method per document kind, so a format slice still substitutes `bodyFor`
  * whole and the next standalone document is one more member of this union.
  */
-export type DocumentPart = ChangePart | 'capability';
+export type DocumentPart = ChangePart | 'capability' | 'roadmap';
 
 export interface Templates {
   /** The name reported by `molly plugins`, so a corpus can say whose templates it writes. */
@@ -67,6 +67,18 @@ for doing it. Each item should deliver something this change declares.
 
 What would have to be observed for the claim above to be believed. Written before the work,
 because evidence chosen afterwards is chosen to fit what happened.
+`,
+
+  roadmap: `# What is meant to be true later
+
+One statement of intent, in the shape of a record: what should hold, and why it is worth doing.
+Not a plan — how it gets built is the change's business, and a long plan here is a document the
+corpus cannot check and nobody re-reads.
+
+# Why it is not a change yet
+
+What is still unknown, or what has to land first. An entry that could be specified today is one
+somebody should be writing \`molly change new\` for instead.
 `,
 
   capability: `# What this is responsible for

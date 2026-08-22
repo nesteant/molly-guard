@@ -68,8 +68,8 @@ export function skillName(skill: Skill): string {
  * one of them may be loaded and a skill that depends on another being open is a skill that is
  * sometimes wrong.
  */
-const CORPUS = `The corpus is the directory holding \`mollyguard.yml\` — \`docs/\` unless a command was
-given \`--root <dir>\`. Paths below assume the default; read them against the root you find.`;
+const CORPUS = `\`mollyguard.yml\` sits at the top of the repository and names the corpus directory —
+\`docs/\` unless it says otherwise, and is found from anywhere inside. Paths below assume that.`;
 
 /**
  * The skills, and they are short on purpose.
@@ -96,9 +96,13 @@ believed to be. **Nothing enters it except by publishing a change.** Never edit 
 
 ## Read before writing
 
-1. \`molly status\` — what is in flight, and the capabilities that exist.
+1. \`molly status\` — what is in flight, the capabilities that exist, and what is already
+   intended in \`docs/roadmap/\`.
 2. Every file in \`docs/decisions/\` — each is a constraint your work must respect.
-3. \`lang:\` in \`docs/mollyguard.yml\` — write all document prose in that language.
+3. \`docs/conventions.md\`, if it is there — this project's own rules for writing in this corpus.
+   The rest of this skill is how MollyGuard works; that file is how *this* repository uses it,
+   and where the two differ it wins.
+4. \`lang:\` in \`docs/mollyguard.yml\` — write all document prose in that language.
 
 ## The flow
 
@@ -141,13 +145,18 @@ molly publish <change> [--dry-run]
 
 ${CORPUS}
 
-1. \`molly status\` for the capabilities that exist, and read every file in \`docs/decisions/\`.
-2. \`molly change new "<title>" --capability <name>\`, adding \`--alters specs/<name>\` for each
-   knowledge-base document it will change. A change that introduces new truth alters nothing.
+1. \`molly status\` for the capabilities and what \`docs/roadmap/\` already intends — contradicting
+   an entry there is an argument somebody has later. Read \`docs/decisions/\`, and
+   \`docs/conventions.md\` if it is there: that is how *this* repository writes, and it wins.
+2. \`molly change new "<title>" --capability <name>\`, with \`--alters specs/<name>\` per document
+   it changes and \`--realises <entry>\` where a roadmap entry already intends it.
 3. Fill in all four documents. \`change.md\` states one claim and why; \`plan.md\` how it will be
    built; \`tasks.md\` the work in order; \`tests.md\` what would have to be observed for the
    claim to be believed.
 4. Write in the corpus's language, from \`lang:\` in \`docs/mollyguard.yml\`.
+5. **Never guess at what the documents do not answer.** Write the unknown into \`change.md\` under
+   its own heading and stop — locally, ask; unattended, exit non-zero. Nothing in the tool refuses
+   a change for holding one, and nothing needs to: an unresolved change is one nobody approves.
 
 One claim per change; a second claim is a second change.
 

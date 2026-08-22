@@ -34,7 +34,7 @@ import {
   unqualify,
 } from '@mollyguard/core';
 import {
-  CONFIG_FILE,
+  Corpus,
   ProposedDocument,
   appendEvent,
   applyPublishSet,
@@ -47,6 +47,7 @@ import {
   writeDeclaredState,
 } from '@mollyguard/store';
 import { identity } from './identity';
+import { chooseChange } from './pick';
 import { bold, dim, fail, green, info, teal, warn } from './ui';
 
 export interface PublishOptions {
@@ -60,33 +61,47 @@ export interface PublishOptions {
 const publishable = (): readonly string[] => AREAS.filter((a) => a.publishable).map((a) => a.name);
 
 export async function publishCommand(
-  root: string,
-  dir: string,
+  corpus: Corpus,
   options: PublishOptions,
 ): Promise<number> {
-  if (!existsSync(join(root, CONFIG_FILE))) {
-    fail(`no corpus at ${dir}/`, 'run `molly init` first, or pass --root <dir>');
-  }
-  if (options.change === undefined) {
-    fail('molly publish <change>', 'the change whose documents go into the knowledge base');
-  }
-
+  const { root, dir } = corpus;
   const scanned = await readChanges(root);
   for (const line of scanned.unreadable) warn(dim(line));
-
-  const slug = unqualify(CHANGES, options.change);
-  const bundle = scanned.bundles.find((b) => b.slug === slug);
-  if (bundle === undefined) {
-    fail(
-      `no change named "${slug}"`,
-      scanned.bundles.length === 0
-        ? 'there are none in flight'
-        : `one of: ${scanned.bundles.map((b) => b.slug).join(', ')}`,
-    );
+  if (scanned.bundles.length === 0) {
+    fail('there is nothing to publish', 'write one first: `molly change new "<title>"`');
   }
 
   const history = await readHistory(root);
   for (const line of history.unreadable) warn(dim(line));
+
+  // Picked when it was not named, like `move`. Publishing is the one write that
+  // cannot be undone from inside the tool, so seeing the change and its state at the moment of
+  // choosing is worth more here than anywhere else.
+  let slug: string;
+  if (options.change === undefined) {
+    slug = (
+      await chooseChange(
+        scanned.bundles.map((b) => ({
+          node: b.node,
+          slug: b.slug,
+          title: b.record.title,
+          state: stateOf(history.events, b.node),
+        })),
+        'molly publish <change>',
+      )
+    ).slug;
+  } else {
+    slug = unqualify(CHANGES, options.change);
+  }
+
+  const bundle = scanned.bundles.find((b) => b.slug === slug);
+  if (bundle === undefined) {
+    fail(
+      `no change named "${slug}"`,
+      `one of: ${scanned.bundles.map((b) => b.slug).join(', ')}`,
+    );
+  }
+
   const from = stateOf(history.events, bundle.node);
 
   // The same refusal `move` makes, for a stronger reason: publishing out of a disputed state

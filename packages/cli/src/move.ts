@@ -9,6 +9,7 @@
  *
  * Until that seam exists, nothing refuses a move on the grounds of order. That is deliberate
  * and it is stated here so it is not mistaken for an omission.
+
  *
  * **The terminal state is the one exception, and it is not about order.** Reaching it is a
  * write into the knowledge base, performed by `molly publish`. Recording it here would claim a
@@ -31,8 +32,6 @@
  * moved from, since the two would otherwise diverge further at every step.
  */
 
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
 import {
   CHANGES,
   MoveChoice,
@@ -47,14 +46,14 @@ import {
   unqualify,
 } from '@mollyguard/core';
 import {
-  CONFIG_FILE,
+  Corpus,
   appendEvent,
   readChanges,
   readHistory,
   writeDeclaredState,
 } from '@mollyguard/store';
 import { identity } from './identity';
-import { abandoned, interactive, pickChange, pickState } from './pick';
+import { abandoned, chooseChange, interactive, pickState } from './pick';
 import { amber, dim, fail, green, info, teal, warn } from './ui';
 
 export interface MoveOptions {
@@ -64,10 +63,8 @@ export interface MoveOptions {
   readonly at: string;
 }
 
-export async function moveCommand(root: string, dir: string, options: MoveOptions): Promise<number> {
-  if (!existsSync(join(root, CONFIG_FILE))) {
-    fail(`no corpus at ${dir}/`, 'run `molly init` first, or pass --root <dir>');
-  }
+export async function moveCommand(corpus: Corpus, options: MoveOptions): Promise<number> {
+  const { root } = corpus;
 
   const scanned = await readChanges(root);
   for (const line of scanned.unreadable) warn(dim(line));
@@ -88,7 +85,10 @@ export async function moveCommand(root: string, dir: string, options: MoveOption
     })),
   );
 
-  const named = options.change === undefined ? await chooseChange(choices) : resolve(options.change, choices);
+  const named =
+    options.change === undefined
+      ? await chooseChange(choices, 'molly move <change> <state>')
+      : resolve(options.change, choices);
   const from = named.state;
 
   // The ledger is the record; the document's `state:` is a projection of it. A projection that
@@ -170,24 +170,6 @@ function resolve(given: string, choices: readonly MoveChoice[]): MoveChoice {
       .map((choice) => choice.slug)
       .join(', ')}`,
   );
-}
-
-async function chooseChange(choices: readonly MoveChoice[]): Promise<MoveChoice> {
-  if (!interactive()) {
-    fail(
-      'molly move <change> <state>',
-      `nothing is reading input, so there is nobody to ask. Changes: ${choices
-        .map((choice) => choice.slug)
-        .join(', ')}`,
-    );
-  }
-  try {
-    const slug = await pickChange(choices);
-    return choices.find((choice) => choice.slug === slug) as MoveChoice;
-  } catch (cause) {
-    if (abandoned(cause)) process.exit(1);
-    throw cause;
-  }
 }
 
 async function chooseState(

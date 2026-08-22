@@ -14,7 +14,7 @@ truth, or a record of what happened.
 | `capabilities/` | what the product is responsible for | `molly capability new` |
 | `specs/` | accumulated truth | `molly publish` |
 | `decisions/` | constraints outliving any one change | `molly publish` |
-| `roadmap/` | intent not specified yet | written directly |
+| `roadmap/` | intent not specified yet | `molly roadmap new` |
 | `changes/` | work in flight | `molly change new` |
 | `history/` | changes that were published, kept whole | `molly publish` |
 

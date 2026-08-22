@@ -89,7 +89,7 @@ check "an unknown command is a refusal"   1 "unknown command" -- m nonsense
 # ------------------------------------------------------------------------------- init
 printf '\ninit\n'
 check "it scaffolds a corpus"             0 "corpus initialised" -- m init
-check "it refuses to overwrite one"       1 "already exists"     -- m init
+check "it refuses to overwrite one"       1 "a corpus is already here" -- m init
 
 # Every directory, present and explained. Git tracks no empty directory, so a skeleton
 # without these is a corpus that vanishes on clone.
@@ -104,9 +104,15 @@ check "the ledger warns against editing"  0 "Never edit it"   -- cat docs/.molly
 check "the history ledger exists"         0 ""                -- test -f docs/.mollyguard/history.jsonl
 check "and starts empty"                  0 "0"               -- sh -c 'wc -l < docs/.mollyguard/history.jsonl | tr -d " "'
 
-check "the config marks the root"         0 "lang: en"        -- cat docs/mollyguard.yml
+# At the top of the repository, naming the corpus — which is what lets every command find it
+# from anywhere inside without being told where it is.
+check "the config sits above the corpus"  0 "root: docs"      -- cat mollyguard.yml
+check "and records the language"          0 "lang: en"        -- cat mollyguard.yml
+refute "and is not inside the corpus"     "mollyguard.yml" -- sh -c 'ls docs'
 check "a language can be chosen"          0 "lang: uk"        -- sh -c '
-  node '"$BIN"' init --root docs-uk --lang uk >/dev/null && cat docs-uk/mollyguard.yml'
+  cd "$(mktemp -d)" && node '"$BIN"' init --root docs-uk --lang uk >/dev/null && cat mollyguard.yml'
+check "and the directory it names too"    0 "root: docs-uk"   -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init --root docs-uk >/dev/null && cat mollyguard.yml'
 
 # A README that names a command which does not exist sends its reader to a dead end, and the
 # text ages silently — nothing else in the build reads prose, so nothing else would notice.
@@ -126,6 +132,57 @@ check "the READMEs name only real commands" 0 "ok" -- sh -c '
 # whose history is not a fiction.
 refute "it seeds no example specification"  "invoice"   -- sh -c 'ls -R docs'
 check "specs/ holds only its README"      0 "1"               -- sh -c 'ls docs/specs | wc -l | tr -d " "'
+
+# ------------------------------------------------------------- what an install finds
+#
+# `docs/` is the default root, and it is a directory somebody else's repository already had.
+# Every write init makes is a write over their file until something says otherwise — and it
+# did not: a hand-written `docs/README.md` was replaced, and the run exited 0 saying nothing.
+printf '\nwhat an install finds\n'
+
+found() {
+  cd "$(mktemp -d)" || exit 2
+  mkdir -p docs
+  printf '# Our documentation\n\nWritten by a person.\n' > docs/README.md
+}
+check "a file already there is left alone" 0 "Written by a person" -- sh -c '
+  '"$(declare -f found)"'; found
+  node '"$BIN"' init >/dev/null
+  cat docs/README.md'
+# A skip nobody is told about is a different failure and not a smaller one: the reader believes
+# the explainer in front of them is the one the tool writes.
+check "and the run names what it kept"     0 "docs/README.md" -- sh -c '
+  '"$(declare -f found)"'; found
+  node '"$BIN"' init'
+check "and the corpus is still made"       0 "corpus initialised" -- sh -c '
+  '"$(declare -f found)"'; found
+  node '"$BIN"' init'
+check "and every absent explainer is written" 0 "# changes/" -- sh -c '
+  '"$(declare -f found)"'; found
+  node '"$BIN"' init >/dev/null
+  cat docs/changes/README.md'
+
+# The case the reported one was a mild instance of. An explainer can be written again by the
+# tool; a ledger cannot be written again by anything.
+kept_ledger() {
+  cd "$(mktemp -d)" || exit 2
+  mkdir -p docs/.mollyguard
+  printf '{"node":"changes/old","at":"2020-01-01T00:00:00Z","kind":"created","to":"draft"}\n' \
+    > docs/.mollyguard/history.jsonl
+}
+check "a ledger already there is not truncated" 0 "changes/old" -- sh -c '
+  '"$(declare -f kept_ledger)"'; kept_ledger
+  node '"$BIN"' init >/dev/null
+  cat docs/.mollyguard/history.jsonl'
+# Named on its own, because the remedy offered for an explainer would destroy this one.
+check "and is named as the one never to delete" 0 "a corpus was here before this one" -- sh -c '
+  '"$(declare -f kept_ledger)"'; kept_ledger
+  node '"$BIN"' init'
+
+# The other direction. A write that kept everything would look exactly like a fix from the side
+# the defect was reported from.
+refute "an empty directory keeps nothing"   "already here" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init'
 
 # ------------------------------------------------------------------------- change new
 printf '\nchange new\n'
@@ -158,13 +215,38 @@ check "the clip honours the exported limit" 0 "ok" -- node -e '
   console.log(long.length <= c.SLUG_LIMIT && long.length > c.SLUG_LIMIT - 12 ? "ok" : `clipped to ${long.length}`);'
 check "a title that reduces to nothing is refused" 1 "does not reduce to a name" -- sh -c '
   node '"$BIN"' change new "!!! ???"'
+
+# A title that reduces to *part* of itself was the quiet one. `Вхід через Entra ID` became
+# `entra-id` and exited 0, so the realistic title for a corpus not written in English produced
+# a name two thirds of it had fallen out of — and a name is minted once and never translated.
+check "a title that loses words is refused" 1 "reduce to nothing" -- sh -c '
+  node '"$BIN"' change new "Вхід через Entra ID"'
+check "and names the words it would lose"  1 "Вхід, через reduce to nothing" -- sh -c '
+  node '"$BIN"' change new "Вхід через Entra ID"'
+# A refusal saying a name would be partial without saying which name is one nobody can check.
+check "and shows the name it refused to mint" 1 'would be named "entra-id"' -- sh -c '
+  node '"$BIN"' change new "Вхід через Entra ID"'
+# The refusal is about deriving a name, not about the title. A corpus written in Ukrainian has
+# to stay usable, which was the point of the complaint.
+check "a name given by hand still works"   0 "changes/entra-login" -- sh -c '
+  node '"$BIN"' change new "Вхід через Entra ID" --name entra-login'
+# Without the letter-or-digit test every em dash is a lost word, and a check that fires on
+# everything is as useless as one that never fires.
+check "punctuation between words is not loss" 0 "changes/refunds-and-their-edges" -- sh -c '
+  node '"$BIN"' change new "Refunds — and their edges"'
+# A name given by hand is checked for being typable and for nothing else: the author looked at
+# their title and chose. It used to be refused by the message about reducing the title, which
+# named a derivation that never happened.
+check "a name nobody could type is refused" 1 "is not a usable name" -- sh -c '
+  node '"$BIN"' change new "Fine title" --name "Not A Slug"'
+
 check "a duplicate name is refused"       1 "already exists" -- sh -c '
   node '"$BIN"' change new "Some other change" --name short-name'
 check "an unknown kind is refused"        1 "is not a kind of change" -- sh -c '
   node '"$BIN"' change new "Whatever" --kind epic'
 check "and names the ones there are"      1 "feature, bug, refactor, chore" -- sh -c '
   node '"$BIN"' change new "Whatever" --kind epic'
-check "a change outside a corpus is refused" 1 "no corpus at" -- sh -c '
+check "a change outside a corpus is refused" 1 "no corpus here" -- sh -c '
   cd / && node '"$BIN"' change new "Nowhere"'
 
 # An empty `alters` is the normal answer for a change that introduces new truth, so it is not
@@ -213,11 +295,17 @@ check "a name can be chosen instead"      0 "capabilities/short" -- sh -c '
   node '"$BIN"' capability new "Some other grouping" --name short'
 check "a title that reduces to nothing is refused" 1 "does not reduce to a name" -- sh -c '
   node '"$BIN"' capability new "!!! ???"'
+# The same rule, because both commands mint a name through one function. The block was carried
+# twice before this, and duplicated code is fixed once. Asserted with the whole clause, so the
+# one-lost-word phrasing is held here and the two-word one above — the common case is one foreign
+# noun in an otherwise English title, and it is the case a plural verb would read wrongly in.
+check "and one that loses words is too"   1 "Облік reduces to nothing" -- sh -c '
+  node '"$BIN"' capability new "Облік expenses"'
 check "a duplicate is refused"            1 "already exists" -- sh -c '
   node '"$BIN"' capability new "Billing"'
 check "a missing title is refused"        1 "molly capability new" -- m capability new
 check "an unknown verb says the one there is" 1 "molly capability new" -- m capability list
-check "one outside a corpus is refused"   1 "no corpus at" -- sh -c '
+check "one outside a corpus is refused"   1 "no corpus here" -- sh -c '
   cd / && node '"$BIN"' capability new "Nowhere"'
 
 # The reference, resolved rather than merely written. A field admitting exactly one area takes
@@ -297,6 +385,82 @@ check "another area's prefix is left alone"  0 '"changes/x"' -- node -e '
 check "and the two halves round-trip"        0 "ok" -- node -e '
   const c = require("'"$ROOT"'/packages/core/dist/index.js");
   console.log(c.unqualify("specs", c.qualify("specs", "invoice")) === "invoice" ? "ok" : "lost");'
+
+# --------------------------------------------------------------------------- the roadmap
+#
+# The area the corpus README calls "read while planning" was the one area no command showed.
+# A listing that omits an area without saying so is worse than no listing, because it is
+# believed — somebody concludes nothing was intended and drafts a change that contradicts an
+# entry sitting in the corpus. Run in its own corpus, so the table asserted here is the whole
+# table rather than whatever the sections above left behind.
+printf '\nthe roadmap\n'
+
+intended() {
+  cd "$(mktemp -d)" || exit 2
+  node "$BIN" init >/dev/null
+  node "$BIN" capability new "Billing" --name billing >/dev/null
+  printf -- '---\ntitle: Invoices are archived after seven years\nlang: en\ncapability: billing\n---\n\nLater.\n' \
+    > docs/roadmap/seven-year-archive.md
+  printf -- '---\ntitle: A second thought\nlang: en\n---\n\nLater.\n' \
+    > docs/roadmap/a-second-thought.md
+}
+check "an entry appears in the table"      0 "roadmap       a-second-thought, seven-year-archive" -- sh -c '
+  '"$(declare -f intended)"'; intended
+  node '"$BIN"' status'
+# The table and the document are two renderings of one gathered report, so an entry in one and
+# not the other is the disagreement this command is built to make impossible.
+check "and in the document"                0 '"name": "seven-year-archive"' -- sh -c '
+  '"$(declare -f intended)"'; intended
+  node '"$BIN"' status --json'
+check "with the title somebody wrote"      0 "Invoices are archived after seven years" -- sh -c '
+  '"$(declare -f intended)"'; intended
+  node '"$BIN"' status --json'
+check "and the capability it belongs to"   0 '"capability": "billing"' -- sh -c '
+  '"$(declare -f intended)"'; intended
+  node '"$BIN"' status --json'
+# Absent means undeclared, never null and never empty — the rule the rest of the report keeps.
+check "one filing nothing declares nothing" 0 "absent" -- sh -c '
+  '"$(declare -f intended)"'; intended
+  node '"$BIN"' status --json | node -e "
+    let s=\"\"; process.stdin.on(\"data\",d=>s+=d).on(\"end\",()=>{
+      const e=JSON.parse(s).roadmap.find(x=>x.name===\"a-second-thought\");
+      console.log(\"capability\" in e ? \"present\" : \"absent\") })"'
+# A README is documentation in every area, and an area holding files is where that is
+# load-bearing rather than theoretical.
+check "the directory README is not an entry" 0 "2" -- sh -c '
+  '"$(declare -f intended)"'; intended
+  node '"$BIN"' status --json | node -e "
+    let s=\"\"; process.stdin.on(\"data\",d=>s+=d).on(\"end\",()=>{
+      console.log(JSON.parse(s).roadmap.length) })"'
+# An entry is a note somebody wrote while planning. Dropping one for having no frontmatter
+# would hide exactly the entries written fastest, which are the ones worth being reminded of.
+check "an entry with no record is still listed" 0 "quick-note" -- sh -c '
+  '"$(declare -f intended)"'; intended
+  printf "Just a thought.\n" > docs/roadmap/quick-note.md
+  node '"$BIN"' status'
+
+# What cannot be read is said out loud here as everywhere. What differs is that it does not
+# fail: an entry is a note, not a governed unit, and failing a build over a broken frontmatter
+# block in a planning note would be refusing somebody's notes for existing.
+check "a folder here is reported"          0 "roadmap/a-folder is a folder" -- sh -c '
+  '"$(declare -f intended)"'; intended
+  mkdir docs/roadmap/a-folder
+  node '"$BIN"' status'
+check "a name nobody could type is reported" 0 "not a usable name" -- sh -c '
+  '"$(declare -f intended)"'; intended
+  : > "docs/roadmap/Seven Years.md"
+  node '"$BIN"' status'
+check "and the corpus stays clean"         0 '"ok": true' -- sh -c '
+  '"$(declare -f intended)"'; intended
+  mkdir docs/roadmap/a-folder
+  : > "docs/roadmap/Seven Years.md"
+  node '"$BIN"' status --json'
+
+# A corpus with nothing intended yet is a young corpus, not a broken one.
+refute "a corpus with none says nothing about it" "roadmap " -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' change new "Alone" --name alone >/dev/null
+  node '"$BIN"' status'
 
 # -------------------------------------------------------------------------- the lifecycle
 printf '\nthe lifecycle\n'
@@ -584,10 +748,10 @@ check "a document with no record still reports" 1 "has no frontmatter block" -- 
 # disk that the ledger had no record of — a half-applied creation, which is what the collision
 # check exists to prevent everywhere else.
 check "a corpus missing its ledger dir recovers" 0 "" -- sh -c '
-  cd "$(mktemp -d)" && mkdir -p docs/changes && printf "lang: en\n" > docs/mollyguard.yml
+  cd "$(mktemp -d)" && mkdir -p docs/changes && printf "root: docs\nlang: en\n" > mollyguard.yml
   node '"$BIN"' change new "Hand made" --name hm >/dev/null 2>&1'
 check "and the creation is recorded anyway"  0 '"kind":"created"' -- sh -c '
-  cd "$(mktemp -d)" && mkdir -p docs/changes && printf "lang: en\n" > docs/mollyguard.yml
+  cd "$(mktemp -d)" && mkdir -p docs/changes && printf "root: docs\nlang: en\n" > mollyguard.yml
   node '"$BIN"' change new "Hand made" --name hm >/dev/null 2>&1
   cat docs/.mollyguard/history.jsonl'
 
@@ -773,8 +937,10 @@ check "and it names the states reachable"       1 "review" -- sh -c '
   node '"$BIN"' move picker-probe < /dev/null'
 check "an unknown name points at the picker"    1 "with no arguments to pick from a list" -- sh -c '
   node '"$BIN"' move nonesuch review'
+# In a directory of its own: one configuration names one corpus, so a second beside the first is
+# refused rather than added.
 check "moving with no changes at all is refused" 1 "no changes to move" -- sh -c '
-  node '"$BIN"' init --root empty-corpus >/dev/null && node '"$BIN"' move --root empty-corpus < /dev/null'
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null && node '"$BIN"' move < /dev/null'
 
 # --------------------------------------------------------------------------- publishing
 printf '\npublishing\n'
@@ -947,9 +1113,12 @@ check "an archive already taken is refused"    1 "already exists" -- sh -c '
   '"$(declare -f seeded)"'; seeded
   mkdir -p docs/history/fed
   node '"$BIN"' publish fed'
-check "publishing outside a corpus is refused" 1 "no corpus at" -- sh -c '
+check "publishing outside a corpus is refused" 1 "no corpus here" -- sh -c '
   cd / && node '"$BIN"' publish anything'
-check "publishing with no change named is refused" 1 "molly publish <change>" -- sh -c '
+# The reason rather than the usage line, which is what `move` says in the same situation.
+# Being told the shape of the command answers a question nobody asked when the actual
+# problem is that there is nothing to name.
+check "publishing with no change named is refused" 1 "there is nothing to publish" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null && node '"$BIN"' publish'
 
 # A dry run decides identically and writes nothing. One that could disagree with the real run
@@ -1290,11 +1459,11 @@ check "and how the terminal state is reached"  0 "never by \`molly move\`" -- sh
   '"$(declare -f skill)"'; skill'
 check "and points at the decisions in force"   0 "docs/decisions/" -- sh -c '
   '"$(declare -f skill)"'; skill'
-check "and at the language to write in"        0 "docs/mollyguard.yml" -- sh -c '
+check "and at the language to write in"        0 "mollyguard.yml" -- sh -c '
   '"$(declare -f skill)"'; skill'
 # A corpus is not always at docs/. Without this the skill describes every path wrongly for a
 # corpus made with --root, and the description would not fire for it either.
-check "and says how to find the corpus"        0 "the directory holding \`mollyguard.yml\`" -- sh -c '
+check "and says how to find the corpus"        0 "sits at the top of the repository" -- sh -c '
   '"$(declare -f skill)"'; skill'
 refute "and does not tie its trigger to docs/"   "repository has docs/" -- sh -c '
   '"$(declare -f skill)"'; skill'
@@ -1319,13 +1488,13 @@ check "every skill conforms to the spec"       0 "ok" -- sh -c '
   [ -z "$bad" ] || { printf "%s\n" "$bad"; exit 1; }
   echo ok'
 # Only one of them may be loaded, so a skill that depended on another being open would be a
-# skill that is sometimes wrong. Each says where the corpus is, because a corpus made with
-# --root is not at docs/ and every path in it would then be read against the wrong directory.
+# skill that is sometimes wrong. Each says where the corpus is, because a corpus the config names
+# is not necessarily docs/ and every path in it would then be read against the wrong directory.
 check "each skill stands on its own"           0 "ok" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents --tools agents >/dev/null
   miss=""
   for file in .agents/skills/*/SKILL.md; do
-    grep -qF "unless a command was" "$file" || miss="$miss [$file]"
+    grep -qF "unless it says otherwise" "$file" || miss="$miss [$file]"
   done
   [ -z "$miss" ] || { printf "%s\n" "$miss"; exit 1; }
   echo ok'
@@ -1416,6 +1585,331 @@ check "and the workflow skills shorter still" 0 "ok" -- sh -c '
   done
   [ -z "$long" ] || { printf "%s\n" "$long"; exit 1; }
   echo ok'
+
+
+
+# ------------------------------------------------------------------ finding the corpus
+#
+# The configuration used to live *inside* the corpus, which made it both the marker and the
+# contents — and cost every command a `--root` flag for ever after. It also meant no searching:
+# the tool looked at `docs/` under the working directory and nowhere else, so standing one
+# directory down broke everything.
+printf '\nfinding the corpus\n'
+
+deep() {
+  cd "$(mktemp -d)" || exit 2
+  node "$BIN" init >/dev/null
+  mkdir -p src/a/b
+}
+check "a command works from a subdirectory" 0 "capabilities/billing" -- sh -c '
+  '"$(declare -f deep)"'; deep
+  cd src/a/b && node '"$BIN"' capability new "Billing" --name billing'
+# The name is the corpus's, not a path computed from wherever the shell happened to be. A tool
+# calling one corpus `docs` here and `../../../docs` there produces output nothing can compare.
+check "and names the corpus the same way"  0 "docs/capabilities/billing.md" -- sh -c '
+  '"$(declare -f deep)"'; deep
+  cd src/a/b && node '"$BIN"' capability new "Billing" --name billing'
+check "and status reads it from down there" 0 "capabilities  billing" -- sh -c '
+  '"$(declare -f deep)"'; deep
+  node '"$BIN"' capability new "Billing" --name billing >/dev/null
+  cd src/a/b && node '"$BIN"' status'
+# Outside one entirely is still a refusal, and it says where it looked.
+check "outside any corpus it says so"      1 "no corpus here" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' status'
+
+# A configuration that will not parse used to degrade into the old layout — `root:` could not be
+# read, so the corpus was taken to be the directory holding the file, and `status` reported an
+# empty corpus and exited 0 while the real one sat untouched beside it. Reporting success over
+# something it never looked at is the one failure this tool exists to prevent.
+check "a config that will not parse is refused" 1 "mollyguard.yml:" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  printf "root: docs\n  bad: [\n" > mollyguard.yml
+  node '"$BIN"' status'
+check "and it does not report an empty corpus" 1 "fix" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' capability new "Billing" --name billing >/dev/null
+  printf "root: docs\n  bad: [\n" > mollyguard.yml
+  node '"$BIN"' status'
+
+# One configuration names one corpus, so a second in the same directory is refused rather than
+# added — two would be two answers to "where is the corpus".
+check "a second corpus here is refused"    1 "a corpus is already here" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' init --root other'
+check "and it names what configures it"    1 "mollyguard.yml configures it" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' init'
+# A package inside a larger repository may have its own, so the refusal is about this directory
+# rather than about anything above it. Discovery walks up, so the nearest one wins.
+check "one below another is allowed"       0 "corpus initialised" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  mkdir -p packages/inner && cd packages/inner && node '"$BIN"' init'
+check "and the nearer one is the one found" 0 "root: docs" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init --root outer >/dev/null
+  mkdir -p packages/inner && cd packages/inner
+  node '"$BIN"' init >/dev/null && cat mollyguard.yml'
+
+# The old layout, where the file sat in the corpus and there was no `root:`. Nothing has to be
+# migrated: the rule is one line and it is not a deprecation.
+legacy() {
+  cd "$(mktemp -d)" || exit 2
+  mkdir -p docs/capabilities docs/.mollyguard
+  printf 'lang: en\n' > docs/mollyguard.yml
+  : > docs/.mollyguard/history.jsonl
+  printf -- '---\ntitle: Old\nlang: en\n---\n' > docs/capabilities/old.md
+}
+check "a corpus in the old layout still reads" 0 "capabilities  old" -- sh -c '
+  '"$(declare -f legacy)"'; legacy
+  node '"$BIN"' status'
+check "and is still found from below"      0 "capabilities  old" -- sh -c '
+  '"$(declare -f legacy)"'; legacy
+  mkdir -p deep/er && cd deep/er && node '"$BIN"' status'
+check "and init will not double it"        1 "a corpus is already here" -- sh -c '
+  '"$(declare -f legacy)"'; legacy
+  node '"$BIN"' init'
+# `--root` still names the corpus directory, for the odd case and for a corpus not at docs/.
+check "the flag still points at one"       0 "capabilities  old" -- sh -c '
+  '"$(declare -f legacy)"'; legacy
+  mv docs kb && node '"$BIN"' status --root kb'
+# Commands that write outside a corpus are not refused for standing outside one.
+check "agents needs no corpus"             0 "SKILL.md" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents --tools agents'
+# An unknown command has its own message, and answering "no corpus here" to it answers a
+# question nobody asked.
+check "an unknown command says so first"   1 "unknown command" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' frobnicate'
+
+# ------------------------------------------------------------------- naming is a policy
+#
+# A corpus may want its names ordered — `0001-sign-in`, each area counting on its own. The tool
+# has no opinion about whether to, and every opinion about the allocation: reading `ls` for the
+# next free number is a race between two people drafting on one afternoon and a memory test for
+# whoever does it from memory, and a duplicate ordinal is two directories that sort as a pair.
+printf '\nnaming is a policy\n'
+
+ordered() {
+  cd "$(mktemp -d)" || exit 2
+  node "$BIN" init >/dev/null
+  printf 'root: docs\nlang: en\nnaming:\n  changes: "{ordinal:4}-{slug}"\n' > mollyguard.yml
+}
+check "a name is numbered where asked"     0 "changes/0001-first-thing" -- sh -c '
+  '"$(declare -f ordered)"'; ordered
+  node '"$BIN"' change new "First thing"'
+check "and the next one counts on"         0 "changes/0002-second-thing" -- sh -c '
+  '"$(declare -f ordered)"'; ordered
+  node '"$BIN"' change new "First thing" >/dev/null
+  node '"$BIN"' change new "Second thing"'
+# The case a person reading a directory listing cannot get right. The ledger is the only record
+# that outlives the directory, so it is the only one that can answer this.
+check "a deleted change does not free its number" 0 "changes/0003-third" -- sh -c '
+  '"$(declare -f ordered)"'; ordered
+  node '"$BIN"' change new "First thing" >/dev/null
+  node '"$BIN"' change new "Second thing" >/dev/null
+  rm -rf docs/changes/0002-second-thing
+  node '"$BIN"' change new "Third"'
+# An area the policy says nothing about keeps the names it always had.
+refute "an area with no pattern is unnumbered" "0001" -- sh -c '
+  '"$(declare -f ordered)"'; ordered
+  node '"$BIN"' capability new "Billing"'
+# The migration, and the deliberate exception. A corpus adopting a pattern is made of these.
+check "a name given by hand still overrides" 0 "changes/legacy-name" -- sh -c '
+  '"$(declare -f ordered)"'; ordered
+  node '"$BIN"' change new "Anything" --name legacy-name'
+# A policy the tool cannot read is one the corpus believes it has. Silence here is how a
+# repository spends a month thinking it numbers its changes.
+check "a pattern that will not parse is refused" 1 "not a usable pattern" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  printf "root: docs\nlang: en\nnaming:\n  changes: \"{ordinal}-{slug}\"\n" > mollyguard.yml
+  node '"$BIN"' change new "Anything"'
+check "and an area nobody has is too"      1 "is not an area" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  printf "root: docs\nlang: en\nnaming:\n  chnages: \"{ordinal:4}-{slug}\"\n" > mollyguard.yml
+  node '"$BIN"' change new "Anything"'
+# The other direction: a corpus that declares nothing is the corpus that existed before this.
+refute "a corpus with no policy is unchanged" "0001" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' change new "Plain name"'
+
+# ------------------------------------------------------------------ the commit trailer
+#
+# A commit naming a change must name one that exists. The half that is the tool's, because the
+# trailer holds a MollyGuard id and nothing else knows what those address; which commits must
+# carry one stays the project's, declared rather than assumed.
+printf '\nthe commit trailer\n'
+
+committed() {
+  cd "$(mktemp -d)" || exit 2
+  git init -q .
+  node "$BIN" init >/dev/null
+  printf 'root: docs\nlang: en\ncommit:\n  requires: [feat, fix]\n' > mollyguard.yml
+  node "$BIN" change new "Real" --name real >/dev/null
+}
+check "a trailer naming a change passes"   0 "" -- sh -c '
+  '"$(declare -f committed)"'; committed
+  printf "feat: add it\n\nMollyGuard: real\n" > m
+  node '"$BIN"' commit-msg m'
+check "one naming nothing is refused"      1 "names no change" -- sh -c '
+  '"$(declare -f committed)"'; committed
+  printf "feat: add it\n\nMollyGuard: ghost\n" > m
+  node '"$BIN"' commit-msg m'
+check "a required type with none is refused" 1 "must name the change" -- sh -c '
+  '"$(declare -f committed)"'; committed
+  printf "feat: add it\n" > m
+  node '"$BIN"' commit-msg m'
+check "a type nobody asked of passes"      0 "" -- sh -c '
+  '"$(declare -f committed)"'; committed
+  printf "docs: tidy up\n" > m
+  node '"$BIN"' commit-msg m'
+# Generated messages are not a person'"'"'s to edit, and a rule applying to them is a rule that
+# fires on the tool that wrote them.
+check "a merge commit is not asked"        0 "" -- sh -c '
+  '"$(declare -f committed)"'; committed
+  printf "Merge branch main into topic\n" > m
+  node '"$BIN"' commit-msg m'
+# Git strips the comment block after the hook has seen it, so a trailer inside it is one the
+# author did not write.
+check "a trailer in the comment block is not one" 1 "must name the change" -- sh -c '
+  '"$(declare -f committed)"'; committed
+  printf "feat: add it\n\n# MollyGuard: real\n" > m
+  node '"$BIN"' commit-msg m'
+# The published half of the corpus. A commit written six months ago names a change that has long
+# since been archived, and a check knowing only what is in flight refuses the repository'"'"'s past.
+check "an archived change still resolves"  0 "" -- sh -c '
+  '"$(declare -f committed)"'; committed
+  mkdir -p docs/history/old
+  printf -- "---\ntitle: Old\nlang: en\nkind: feature\nstate: published\n---\n" > docs/history/old/change.md
+  printf "fix: repair it\n\nMollyGuard: old\n" > m
+  node '"$BIN"' commit-msg m'
+# A corpus declaring nothing gets the resolution and no requirement — the tool imposing a commit
+# convention on every repository that installs it is the thing it is careful never to do.
+check "no policy means nothing is required" 0 "" -- sh -c '
+  cd "$(mktemp -d)" && git init -q . && node '"$BIN"' init >/dev/null
+  printf "feat: add it\n" > m
+  node '"$BIN"' commit-msg m'
+check "and a wrong trailer is still caught" 1 "names no change" -- sh -c '
+  cd "$(mktemp -d)" && git init -q . && node '"$BIN"' init >/dev/null
+  printf "chore: whatever\n\nMollyGuard: ghost\n" > m
+  node '"$BIN"' commit-msg m'
+# `.git` is a *file* in a worktree or a submodule, so joining a path onto it produces one that
+# cannot be created. It crashed with ENOTDIR and exit 2 — the code reserved for a defect in the
+# tool — while standing somewhere entirely ordinary. Git is asked where the hooks are instead.
+check "the hook installs from a worktree"  0 "commit-msg" -- sh -c '
+  cd "$(mktemp -d)" && git init -q main && cd main
+  git commit -q --allow-empty -m init
+  node '"$BIN"' init >/dev/null
+  git worktree add -q ../wt >/dev/null 2>&1
+  cd ../wt && node '"$BIN"' init >/dev/null 2>&1
+  node '"$BIN"' hooks install'
+# A refusal, not a crash. Exit 1 says the tool declined; exit 2 says the tool broke.
+check "and outside a repository is refused" 1 "no git repository" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' hooks install'
+check "the hook can be installed"          0 ".git/hooks/commit-msg" -- sh -c '
+  '"$(declare -f committed)"'; committed
+  node '"$BIN"' hooks install'
+# The same courtesy init gives a directory it did not make. A hook already there ran something.
+check "and one already there is kept"      0 "was already here" -- sh -c '
+  '"$(declare -f committed)"'; committed
+  mkdir -p .git/hooks && printf "#!/bin/sh\necho mine\n" > .git/hooks/commit-msg
+  node '"$BIN"' hooks install'
+
+# ------------------------------------------------------- the plan and the corpus agreeing
+#
+# A change publishes and its roadmap entry survives, so the plan goes on planning something that
+# already exists. Nothing here retires the entry — it is somebody's planning note and the tool
+# writes no prose — but it stops being something only a person remembers to notice.
+printf '\nthe plan and the corpus\n'
+
+planned() {
+  cd "$(mktemp -d)" || exit 2
+  node "$BIN" init >/dev/null
+  node "$BIN" capability new "Billing" --name billing >/dev/null
+  printf -- '---\ntitle: Invoices are archived\nlang: en\ncapability: billing\n---\n\nLater.\n' \
+    > docs/roadmap/seven-year-archive.md
+  node "$BIN" change new "Archive them" --name archive --capability billing \
+    --realises seven-year-archive >/dev/null
+  mkdir -p docs/changes/archive/publish/specs/archiving
+  printf -- '---\ntitle: A\nlang: en\ncapability: billing\n---\n\nSeven years.\n' \
+    > docs/changes/archive/publish/specs/archiving/spec.md
+}
+check "an entry can be written by command" 0 "roadmap/invoices-are-archived" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' roadmap new "Invoices are archived"'
+# The half a hand-written entry does not get. The scan reports `Seven Years.md` as unusable for
+# as long as it sits there; a minted name is one every other command can already take.
+check "and its name is minted by the same rule" 1 "Облік reduces to nothing" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' roadmap new "Облік expenses"'
+check "and it is numbered where the corpus asks" 0 "roadmap/0001-a-thought" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  printf "root: docs\nlang: en\nnaming:\n  roadmap: \"{ordinal:4}-{slug}\"\n" > mollyguard.yml
+  node '"$BIN"' roadmap new "A thought"'
+check "a capability it does not have is refused" 1 "no capability named" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' roadmap new "A thought" --capability ghost'
+check "a duplicate entry is refused"       1 "already exists" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' roadmap new "A thought" >/dev/null
+  node '"$BIN"' roadmap new "A thought"'
+check "a change may name what it realises" 0 '"realises": "seven-year-archive"' -- sh -c '
+  '"$(declare -f planned)"'; planned
+  node '"$BIN"' status --json'
+check "an entry that is not there is refused" 1 "no roadmap entry named" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' change new "X" --realises nothing-here'
+check "a realised entry is reported"       0 "realised by changes/archive" -- sh -c '
+  '"$(declare -f planned)"'; planned
+  node '"$BIN"' publish archive >/dev/null
+  node '"$BIN"' status'
+# Reported, not failed: an entry is a note rather than a governed unit, and failing a build over
+# a planning document nobody retired would be refusing somebody's notes for existing.
+check "and the corpus stays clean"         0 '"ok": true' -- sh -c '
+  '"$(declare -f planned)"'; planned
+  node '"$BIN"' publish archive >/dev/null
+  node '"$BIN"' status --json'
+check "retiring it quietens the report"    0 "ok" -- sh -c '
+  '"$(declare -f planned)"'; planned
+  node '"$BIN"' publish archive >/dev/null
+  rm docs/roadmap/seven-year-archive.md
+  node '"$BIN"' status | grep -q "realised by" && echo "still reported" || echo ok'
+# Only while in flight. An archived change pointing at a retired entry is the finished shape of
+# this link, and reporting it would turn every correct publication into a finding.
+refute "a published change is not asked again" "realise a roadmap entry that is not there" -- sh -c '
+  '"$(declare -f planned)"'; planned
+  node '"$BIN"' publish archive >/dev/null
+  rm docs/roadmap/seven-year-archive.md
+  node '"$BIN"' status'
+
+
+# ------------------------------------------------------------- the corpus's own language
+#
+# `mollyguard.yml` was written by `molly init --lang uk` and then never read, so every document
+# minted afterwards said `lang: en` inside a corpus that had declared itself Ukrainian — the tool
+# producing a document that contradicts the corpus it is in.
+printf "\nthe corpus's own language\n"
+
+check "a minted change takes the corpus language" 0 "lang: uk" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init --lang uk >/dev/null
+  node '"$BIN"' change new "A thing" --name a-thing >/dev/null
+  grep "^lang:" docs/changes/a-thing/change.md'
+check "and so does a capability"           0 "lang: uk" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init --lang uk >/dev/null
+  node '"$BIN"' capability new "Grouping" --name grouping >/dev/null
+  grep "^lang:" docs/capabilities/grouping.md'
+check "and a roadmap entry"                0 "lang: uk" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init --lang uk >/dev/null
+  node '"$BIN"' roadmap new "Later" --name later >/dev/null
+  grep "^lang:" docs/roadmap/later.md'
+# The caller has the better claim than the corpus, and both beat the default.
+check "the flag still overrides it"        0 "lang: de" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init --lang uk >/dev/null
+  node '"$BIN"' change new "A thing" --name a-thing --lang de >/dev/null
+  grep "^lang:" docs/changes/a-thing/change.md'
+check "and a corpus declaring none is English" 0 "lang: en" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  printf "root: docs\n" > mollyguard.yml
+  node '"$BIN"' change new "A thing" --name a-thing >/dev/null
+  grep "^lang:" docs/changes/a-thing/change.md'
 
 # ------------------------------------------------------------------------------- purity
 printf '\nthe core stays pure\n'

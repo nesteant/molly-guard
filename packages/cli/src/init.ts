@@ -9,63 +9,128 @@
  * first day — a tracker that is wrong from the first minute is one people learn to disbelieve.
  * An example is produced by running the flow, which is the only way to get one whose history
  * is not a fiction.
+ *
+ * **It writes nothing over anything.** The root is a directory somebody else's repository
+ * already had, so every file here is placed only where there is nothing, and what was found is
+ * named at the end. The corpus is still made either way — keeping a file is not a refusal.
+ *
+ * **Two places, and only one of them is the corpus.** `mollyguard.yml` goes at the top of the
+ * repository and names the directory; the directory holds the areas. That is what lets every
+ * other command find the corpus from anywhere inside the repository instead of being told where
+ * it is on each invocation.
  */
 
-import { existsSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir } from 'node:fs/promises';
+import { join, posix, relative } from 'node:path';
 import { ROOT_README, STATE_README, allDirectories, readmeFor } from '@mollyguard/core';
-import { CONFIG_FILE, HISTORY_FILE, README_FILE, STATE_DIR } from '@mollyguard/store';
+import { CONFIG_FILE, HISTORY_FILE, README_FILE, STATE_DIR, corpusAt, place } from '@mollyguard/store';
 import { agentsCommand } from './agents';
-import { bold, dim, fail, green, info, teal } from './ui';
+import { amber, bold, dim, fail, green, info, teal } from './ui';
 
-const CONFIG = (lang: string): string => `# MollyGuard corpus configuration.
+const CONFIG = (root: string, lang: string): string => `# MollyGuard corpus configuration.
 #
+# This file sits at the top of the repository and names the directory the corpus is in, so every
+# command finds it from anywhere inside — there is nothing to pass on the command line.
+root: ${root}
+
 # \`lang\` is the language the specifications are written in.
 lang: ${lang}
+
+# How names are minted, per area. Commented out because the tool has no opinion about whether a
+# corpus wants ordering — without this every name is its slug, exactly as it reads below.
+#
+# \`{ordinal:n}\` is the next unused number in that area, zero-padded to n. Unused means unused
+# ever: what is in the directory, what was archived out of it, and what the ledger remembers of
+# something deleted by hand. \`--name\` still overrides, which is how a corpus migrates onto a
+# pattern without renaming what it already has.
+#
+# naming:
+#   changes:   '{ordinal:4}-{slug}'
+#   specs:     '{ordinal:4}-{slug}'
+#   decisions: '{ordinal:4}-{slug}'
 `;
 
 export async function initCommand(
-  root: string,
-  dir: string,
-  lang: string,
   cwd: string,
+  dir: string,
+  given: string | undefined,
 ): Promise<number> {
-  if (existsSync(join(root, CONFIG_FILE))) {
+  const lang = given ?? 'en';
+  const root = join(cwd, dir);
+
+  // A corpus already configured *here*, in either layout — not one somewhere above, which a
+  // package inside a larger repository would legitimately sit under. Refused rather than added
+  // to: one configuration names one corpus, so a second here would be a second answer to "where
+  // is the corpus", and having exactly one answer is why the file moved up in the first place.
+  const already = await corpusAt(cwd);
+  if (already !== undefined) {
     fail(
-      `a corpus already exists at ${dir}/`,
-      `delete it first, or pass --root <dir> for a second one`,
+      `a corpus is already here, at ${already.dir}/`,
+      `${relative(cwd, already.config) || CONFIG_FILE} configures it — delete that file to start over, or run this in another directory`,
     );
   }
 
   await mkdir(join(root, STATE_DIR), { recursive: true });
-  await writeFile(join(root, CONFIG_FILE), CONFIG(lang), 'utf8');
+
+  // Written at the top of the repository rather than into the corpus. It is the one file here
+  // that is not part of the corpus at all: it is what says where the corpus is.
+  await place(cwd, CONFIG_FILE, CONFIG(dir, lang));
+
+  // What was found rather than written, in the order it was met. Reported at the end so the
+  // summary reads as one answer rather than as a write interrupted by complaints.
+  const kept: string[] = [];
+  const put = async (path: string, text: string): Promise<void> => {
+    if ((await place(root, path, text)) === 'kept') kept.push(`${dir}/${path}`);
+  };
+
+
 
   // Created empty rather than absent. A ledger that appears on first write is a ledger whose
   // absence and whose emptiness look the same, and those mean different things.
-  await writeFile(join(root, HISTORY_FILE), '', 'utf8');
+  //
+  // Placed like everything else, and this is the one that matters most: a corpus whose config
+  // was deleted still has its history beside it, and a ledger is the one file here that cannot
+  // be written again from anything.
+  await put(HISTORY_FILE, '');
 
-  let readmes = 0;
-  await writeFile(join(root, README_FILE), ROOT_README(dir), 'utf8');
-  await writeFile(join(root, STATE_DIR, README_FILE), STATE_README, 'utf8');
-  readmes += 2;
+  await put(README_FILE, ROOT_README(dir));
+  await put(posix.join(STATE_DIR, README_FILE), STATE_README);
 
   const directories = allDirectories();
   for (const directory of directories) {
     await mkdir(join(root, directory), { recursive: true });
-    await writeFile(join(root, directory, README_FILE), readmeFor(directory), 'utf8');
-    readmes++;
+    await put(posix.join(directory, README_FILE), readmeFor(directory));
   }
+
+  const readmes = directories.length + 2 - kept.filter((path) => path.endsWith(README_FILE)).length;
 
   info(`${green('*')} corpus initialised at ${teal(`${dir}/`)}`);
   info();
-  info(`  ${dim('config')}      ${dir}/${CONFIG_FILE}`);
+  info(`  ${dim('config')}      ${CONFIG_FILE} ${dim(`— names ${dir}/, so no --root is needed`)}`);
   info(`  ${dim('areas')}       ${directories.join(', ')}`);
   info(`  ${dim('readme')}      ${readmes} file(s) — one per directory, saying what belongs in it`);
   info(`  ${dim('knowledge')}   ${dim('empty — nothing is true until a change is published')}`);
   info(`  ${dim('language')}    ${lang}`);
   info(`  ${dim('agents')}      instructions, in the directories agent tools read`);
   info();
+
+  // Named, not counted. A count tells somebody a file of theirs was met and leaves them to find
+  // which — and the whole point of keeping it was that they already had something there worth
+  // more than the explainer this would have written over it.
+  if (kept.length > 0) {
+    info(`  ${amber('!')} ${kept.length} file(s) were already here, and were left as they are`);
+    for (const path of kept) info(`    ${dim(path)}`);
+
+    // The ledger is named on its own, because the remedy below would destroy it. An explainer
+    // is prose nothing reads and is free to replace; a history is the one file in a corpus that
+    // cannot be written again from anything else.
+    if (kept.includes(`${dir}/${HISTORY_FILE}`)) {
+      info(dim('    a corpus was here before this one — its record is kept, and is never deleted'));
+    }
+    info(dim('    an explainer is prose nothing reads: delete one and run again to get this one'));
+    info();
+  }
+
   info();
 
   // Installed with the corpus rather than as a second step, because from where the person is

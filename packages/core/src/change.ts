@@ -64,6 +64,19 @@ export interface ChangeRecord {
    * file what it creates.
    */
   readonly alters: readonly string[];
+  /**
+   * The roadmap entry this change is the specific form of, bare: `seven-year-archive`.
+   *
+   * The link between what was planned and what is being built, and the only thing the tool needs
+   * to notice that a plan went on planning something that already exists. Optional, because most
+   * work is not planned in advance and a change that names nothing is not filed under nothing.
+   *
+   * **It is a reference, not a dependency.** Nothing here orders entries against each other or
+   * decides what may be started — that is a planning tool, and a corpus that wants one has a
+   * roadmap directory it can put anything in. What the tool owns is that the two models cannot
+   * silently disagree about whether a thing has shipped.
+   */
+  readonly realises?: string | undefined;
 }
 
 /**

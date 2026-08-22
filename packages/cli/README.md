@@ -1,6 +1,10 @@
-# MollyGuard
+<p align="center">
+  <img src="https://raw.githubusercontent.com/nesteant/molly-guard/main/assets/logo.png" alt="MollyGuard" width="320">
+</p>
 
-Your specification guardian.
+<h1 align="center">MollyGuard</h1>
+
+<p align="center">Your specification guardian.</p>
 
 A molly-guard is the cover over a big red button. This one covers the knowledge base, so
 nothing enters it because somebody believed it was ready.
@@ -50,7 +54,7 @@ and also temporary — those entries move into `docs/roadmap/` once a command ma
 
 ```bash
 npm run build
-npm run smoke     # 289 assertions
+npm run smoke     # 370 assertions
 ```
 
 Three packages: `@mollyguard/core` decides and holds no I/O, `@mollyguard/store` reads and
