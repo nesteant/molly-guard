@@ -3,7 +3,7 @@ title: A corpus orders its own names
 lang: en
 kind: feature
 capability: the-corpus
-state: draft
+state: published
 alters:
   - specs/creating-a-change
   - specs/publishing-a-change

@@ -56,5 +56,8 @@ the old meaning — and it is not a deprecation.
 Filed against `specs/agent-instructions`, which tells an agent the corpus is *the directory
 holding `mollyguard.yml`* and points at `docs/mollyguard.yml` for the language. Both sentences
 become false here, and they are exactly the sentences an agent acts on.
-`0013-a-project-s-rules-reach-every-agent` alters the same document; whichever publishes second carries
-the other's wording.
+`0013-a-project-s-rules-reach-every-agent` alters the same document; whichever publishes second
+carries the other's wording. Both are now writing on top of
+`0007-commands-every-tool-spells-its-own-way`, which replaced that specification whole — so the
+`publish/` set starts from what is in `specs/agent-instructions/` today, not from the text either
+of these was drafted against.

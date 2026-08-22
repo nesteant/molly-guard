@@ -20,14 +20,6 @@ the first the em dash in *Invoice — immutability* is a lost word and every one
 and without the second nothing is ever lost. Both read through one `reduce`, so *what would this
 become* is answered by the code that makes it become that.
 
-`naming.ts` is the shape a corpus may ask its names to have — `isNamePattern`, `needsOrdinal`,
-`renderName`, `matchName` — and is pure string work. Exactly one `{slug}` and at most one
-`{ordinal:n}`, everything else literal; a pattern holding two of either is refused rather than
-rendered, because a name without its words is a number nobody can read and one carrying them twice
-is a name no reader parses back. `matchName` returning nothing is the ordinary answer rather than
-an error: a corpus that adopts a pattern still holds every name minted before it did, and those
-are simply names this pattern did not produce.
-
 `frontmatter.ts` serialises the record and deliberately admits scalars and arrays of scalars
 only. Once frontmatter can hold a tree, documents start carrying structure that the prose below
 them contradicts. A field with no value is omitted rather than emitted blank.
@@ -43,15 +35,6 @@ produces reproducible and testable.
 
 # Store — writing it
 
-`config.ts` reads `mollyguard.yml`, and *checks* it. A pattern that will not parse and an area
-nobody has are each named rather than skipped, and both are refused before any command acts —
-silently ignoring `chnages:` is how a repository spends a month believing it numbers its
-decisions.
-
-`naming.ts` allocates: the area, the archive named by `AREAS`, and every node the ledger has ever
-mentioned in that area, highest plus one. The third source is the reason this belongs in the tool
-at all — a person reading a directory listing sees the first of the three.
-
 `writeChangeBundle` composes all four documents in memory and checks the target directory is
 free *before* creating anything. A collision returns rather than throws, and leaves the disk
 untouched — so the caller decides how to say it, and nothing half-made survives the refusal.
@@ -60,12 +43,8 @@ Only the entry is serialised with frontmatter; the other three are the template 
 
 # CLI — refusing well
 
-`nameFor` is the one place a name is derived, and the commands that mint call it rather than
-carrying the block each. It applies the corpus's pattern last, after the reduction and both
-refusals. A `--name` given by hand is checked for being typable and for nothing else — not for
-losing words, and not against the pattern: the policy exists to spare people the allocation rather
-than to forbid them an exception, and the migration of a corpus onto a pattern is made entirely of
-such exceptions. Order matters inside it: a title reducing to *nothing* keeps the message
+`nameFor` is the one place a name is derived, and the two commands that mint call it rather than
+carrying the block twice. Order matters inside it: a title reducing to *nothing* keeps the message
 it always had, because `"" would be named ""` is not a sentence, and only a partial name gets the
 one that names the words.
 
@@ -88,9 +67,7 @@ harness refuses any `node:` import, `Date.now` or `new Date` under its source.
 
 # What proves it
 
-Twenty-seven assertions in `scripts/smoke.sh` under `change new`, and a section of its own under
-`naming is a policy` — including the case a directory listing cannot answer, where a change
-deleted with `rm -rf` does not free its number. Nearly all of them are refusals,
+Twenty-seven assertions in `scripts/smoke.sh`, under `change new`. Nearly all of them are refusals,
 because a check that silently stops refusing looks exactly like one that is working and nothing
 else in the system notices.
 

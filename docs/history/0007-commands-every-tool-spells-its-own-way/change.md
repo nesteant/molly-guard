@@ -3,8 +3,9 @@ title: Commands every tool spells its own way
 lang: en
 kind: feature
 capability: the-corpus
-state: draft
-alters: []
+state: published
+alters:
+  - specs/agent-instructions
 ---
 
 # What this change makes true

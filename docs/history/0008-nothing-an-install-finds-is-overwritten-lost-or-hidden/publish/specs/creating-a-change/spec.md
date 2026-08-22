@@ -64,19 +64,6 @@ Clipping is not loss. A title over the cap loses its tail deliberately and visib
 refused — the rule is about the alphabet, not the length. A name given with `--name` is judged
 only on being typable: the author looked at their title and chose.
 
-**And the corpus may say what shape a name has.** `naming:` in `mollyguard.yml` gives an area a
-pattern — `changes: '{ordinal:4}-{slug}'` mints `0001-sign-in-with-entra-id` — and the tool
-allocates the number rather than leaving somebody to read `ls` for it. An area that declares none
-keeps the bare slug, which is what every corpus had before the field existed. So there are three
-answers to what a directory is called, and they apply in that order: `--name`, then the corpus's
-pattern, then the slug alone.
-
-A number is never handed out twice, and *taken* is a wider question than what is on disk: the
-area, its archive, and every node the transition ledger has ever mentioned there. A change created
-and then deleted by hand leaves no directory anywhere and a `created` line for ever, and reusing
-its number would file two different pieces of work under one id — in the record whose whole value
-is that it can be read back.
-
 # What it refuses, and what it merely reports
 
 Every refusal names the remedy rather than the rule, and every one fires before anything is
@@ -89,9 +76,6 @@ written:
 - a `--kind` outside the four, which lists the four
 - a `--capability` that does not exist, which lists the ones that do
 - a directory already taken — `--name` to choose another
-- a `naming:` pattern that cannot be used, or one declared for an area nobody has. Refused before
-  any command runs rather than at the moment it would have applied: a corpus that believes it
-  numbers its changes and silently does not is worse than one that never asked.
 
 The bundle is composed in memory and written only once the target directory is known to be
 free. A half-written bundle exists as far as a listing is concerned and is incomplete as far

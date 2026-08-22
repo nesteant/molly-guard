@@ -3,8 +3,9 @@ title: Nothing an install finds is overwritten, lost or hidden
 lang: en
 kind: bug
 capability: the-corpus
-state: draft
-alters: []
+state: published
+alters:
+  - specs/creating-a-change
 ---
 
 # What this change makes true

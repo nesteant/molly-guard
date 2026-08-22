@@ -52,5 +52,8 @@ is process.
 
 Filed against `specs/agent-instructions`, which states what an installed skill holds and what it
 must never hold. This adds a pointer and holds to the second half — no corpus content is copied
-into a skill. `0012-a-corpus-is-found-not-passed` alters the same document; whichever publishes second
-carries the other's wording.
+into a skill. `0012-a-corpus-is-found-not-passed` alters the same document; whichever publishes
+second carries the other's wording. Both are now writing on top of
+`0007-commands-every-tool-spells-its-own-way`, which replaced that specification whole — so the
+`publish/` set starts from what is in `specs/agent-instructions/` today, not from the text either
+of these was drafted against.

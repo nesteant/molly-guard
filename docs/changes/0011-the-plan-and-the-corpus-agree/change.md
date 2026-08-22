@@ -54,5 +54,7 @@ a retired entry is the *finished* shape of this link, and reporting it would tur
 publication into a finding.
 
 Filed against `specs/creating-a-change`, which states the command's signature; `--realises` joins
-it. `0009-a-corpus-orders-its-own-names` alters the same document, so whichever publishes second
-carries the other's wording — a specification is replaced whole.
+it. `0009-a-corpus-orders-its-own-names` altered the same document and has been published, so this
+one's `publish/` set is written on top of what is in `specs/creating-a-change/` now — a
+specification is replaced whole, and drafting against the older text would silently retract the
+corpus's naming policy.
