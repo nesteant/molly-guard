@@ -84,3 +84,10 @@
 {"node":"changes/0014-molly-writes-in-its-corpus-and-nowhere-it-does-not-own","at":"2026-08-22T18:59:27.853Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0014-molly-writes-in-its-corpus-and-nowhere-it-does-not-own","at":"2026-08-22T18:59:27.941Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0014-molly-writes-in-its-corpus-and-nowhere-it-does-not-own","at":"2026-08-22T18:59:28.028Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0011-the-plan-and-the-corpus-agree","at":"2026-08-23T22:57:25.947Z","kind":"transition","from":"draft","to":"review","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0011-the-plan-and-the-corpus-agree","at":"2026-08-23T22:57:26.038Z","kind":"transition","from":"review","to":"approved","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0011-the-plan-and-the-corpus-agree","at":"2026-08-23T22:57:26.132Z","kind":"transition","from":"approved","to":"in_progress","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0011-the-plan-and-the-corpus-agree","at":"2026-08-23T22:57:26.238Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0011-the-plan-and-the-corpus-agree","at":"2026-08-23T22:57:26.340Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0011-the-plan-and-the-corpus-agree","at":"2026-08-23T22:57:26.449Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0011-the-plan-and-the-corpus-agree","at":"2026-08-23T23:00:58.191Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}

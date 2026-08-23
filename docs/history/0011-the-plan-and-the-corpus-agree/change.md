@@ -3,7 +3,7 @@ title: The plan and the corpus cannot disagree
 lang: en
 kind: feature
 capability: the-corpus
-state: draft
+state: published
 alters:
   - specs/creating-a-change
 ---
