@@ -91,3 +91,17 @@
 {"node":"changes/0011-the-plan-and-the-corpus-agree","at":"2026-08-23T22:57:26.340Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0011-the-plan-and-the-corpus-agree","at":"2026-08-23T22:57:26.449Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0011-the-plan-and-the-corpus-agree","at":"2026-08-23T23:00:58.191Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0012-a-corpus-is-found-not-passed","at":"2026-08-23T23:22:24.936Z","kind":"transition","from":"draft","to":"review","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0012-a-corpus-is-found-not-passed","at":"2026-08-23T23:22:33.734Z","kind":"transition","from":"review","to":"approved","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0012-a-corpus-is-found-not-passed","at":"2026-08-23T23:22:33.851Z","kind":"transition","from":"approved","to":"in_progress","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0012-a-corpus-is-found-not-passed","at":"2026-08-23T23:22:33.948Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0012-a-corpus-is-found-not-passed","at":"2026-08-23T23:22:34.042Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0012-a-corpus-is-found-not-passed","at":"2026-08-23T23:22:34.135Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0012-a-corpus-is-found-not-passed","at":"2026-08-23T23:22:44.455Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0013-a-project-s-rules-reach-every-agent","at":"2026-08-23T23:23:48.382Z","kind":"transition","from":"draft","to":"review","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0013-a-project-s-rules-reach-every-agent","at":"2026-08-23T23:23:48.516Z","kind":"transition","from":"review","to":"approved","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0013-a-project-s-rules-reach-every-agent","at":"2026-08-23T23:23:48.638Z","kind":"transition","from":"approved","to":"in_progress","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0013-a-project-s-rules-reach-every-agent","at":"2026-08-23T23:23:48.759Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0013-a-project-s-rules-reach-every-agent","at":"2026-08-23T23:23:48.973Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0013-a-project-s-rules-reach-every-agent","at":"2026-08-23T23:23:49.254Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0013-a-project-s-rules-reach-every-agent","at":"2026-08-23T23:23:49.425Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}

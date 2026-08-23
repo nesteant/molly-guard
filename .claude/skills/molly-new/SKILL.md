@@ -17,7 +17,7 @@ user-invocable: false
 3. Fill in all four documents. `change.md` states one claim and why; `plan.md` how it will be
    built; `tasks.md` the work in order; `tests.md` what would have to be observed for the
    claim to be believed.
-4. Write in the corpus's language, from `lang:` in `docs/mollyguard.yml`.
+4. Write in the corpus's language, from `lang:` in `mollyguard.yml`.
 5. **Never guess at what the documents do not answer.** Write the unknown into `change.md` under
    its own heading and stop — locally, ask; unattended, exit non-zero. Nothing in the tool refuses
    a change for holding one, and nothing needs to: an unresolved change is one nobody approves.

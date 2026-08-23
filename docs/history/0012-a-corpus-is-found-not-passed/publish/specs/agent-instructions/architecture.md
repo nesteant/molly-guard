@@ -185,17 +185,6 @@ document is replaced whole and there is no delta format, that the tool composes 
 `published` is reached by publishing, and that the three places truth lives are named. Every skill
 says how to find the corpus, and the trigger is not tied to `docs/`.
 
-**That the pointer at the project's own rules is there, and ranked.** `docs/conventions.md` is
-named, and the clause that says it outranks the skill is asserted apart from it — those fail
-apart, and the file named without the ranking is the version that leaves an agent choosing between
-two sets of instructions with no rule for which wins.
-
-**That drafting says never to guess**, that it says where the unknown goes, and that it says
-nothing refuses it. Three assertions over a three-line step, and they are separate because the
-step degrades one line at a time: *never guess* alone leaves an agent stuck with nowhere to put
-the question, and the first two without the third send it looking for the command that enforces
-this, which does not exist.
-
 **And that they carry no fact the corpus holds.** Over a corpus with a capability, a decision and
 a language other than English, no generated skill contains a capability name, a decision name or
 the language tag. These are the refutations that protect the design: a copy is stale the moment

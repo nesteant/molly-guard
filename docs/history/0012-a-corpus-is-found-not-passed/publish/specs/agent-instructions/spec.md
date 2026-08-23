@@ -160,7 +160,6 @@ This is the line the content is cut along, and it decides when regeneration is n
 | read every file in `docs/decisions/` before drafting | the decisions themselves | `docs/decisions/` |
 | run `molly status` for the capabilities there are | the list of them | `docs/capabilities/` |
 | write prose in the corpus's language | `lang: uk` | `mollyguard.yml` |
-| read `docs/conventions.md`, where there is one | this project's own rules | `docs/conventions.md` |
 
 A skill that inlined any of those would be a second answer to a question the corpus already
 answers, stale the moment a decision is superseded and stale **silently** — which is the failure
@@ -187,59 +186,6 @@ is corpus-derived**, so `molly agents` is an upgrade-time command: no one has to
 re-run it after publishing, and forgetting cannot go unnoticed because there is nothing to
 forget. And **the tool directories stay out of unrelated diffs**: a publication that adds a
 decision does not touch `.claude/`.
-
-# A project's own rules reach every agent, or they reach none of them
-
-**A project writes its own rules for working in its corpus into `docs/conventions.md`, and every
-skill points at it.** MollyGuard's guidance is how the tool works; that file is how *this*
-repository uses it, and the skills say which wins: where the two differ, the project does.
-
-Saying so is the whole value of the pointer. A skill that mentions a file without ranking it
-against its own contents leaves an agent to decide, and an agent deciding between two sets of
-instructions will follow the one in front of it.
-
-It is read at the two moments it is needed — in the reference skill, among the things read before
-writing, and in the drafting skill, because drafting is when a project's conventions bind hardest.
-
-**It is a pointer and never a copy**, which is the same rule as every other row in the table
-above and the reason this was buildable at all. Composing `conventions.md` into each installed
-skill is the obvious implementation and the one thing this must not do: it would put corpus
-content into the tooling, stale the moment the file changes and stale silently, times four skills
-times four tool directories. The skills already point at `docs/decisions/` without holding them.
-This is one more pointer of the same kind, and it can never drift.
-
-**The problem it solves is coverage, and the shape of it is worth stating.** A project's
-conventions had one place to live and it was a single tool's instruction file. `molly agents`
-installs into four directories; the rules reached one of them, so an agent driven by any other
-tool got MollyGuard's rules, none of the project's, and behaved confidently and wrongly — which is
-the failure this specification exists to prevent, one layer up. They also arrived at the wrong
-moment: always-on context at session start, competing with everything else, and least salient
-exactly when a change was being drafted. A pointer inside a skill arrives when the work does.
-
-# What the documents do not answer is written down, not guessed
-
-The drafting skill carries one further instruction: **never guess at what the documents do not
-answer.** Write the unknown into `change.md` under its own heading and stop — locally, ask;
-unattended, exit non-zero.
-
-**And it says plainly that nothing in the tool refuses a change for holding one.** That sentence
-is there because the alternative is worse than silence: an agent told *the tool will stop you*
-about something the tool does not stop is an agent that stops trusting the rest of the
-instructions. What the tool refuses and what it merely advises are stated separately, and where a
-skill advises it says so.
-
-Nothing needs to refuse it. The unknown goes where every other sentence in a change goes, and the
-gate is the approval phase — a person declining to advance a change they can see is unresolved.
-The engine owns the vocabulary and the record; *is this resolved enough to proceed* is process,
-and process is not the engine's.
-
-**This is what is left of a larger idea that was built and then removed.** Unanswered questions
-were briefly first-class: a command, an append-only log, a hash pinning each answer to the
-documents it was given against. It was wrong, and the reason generalises. A question is *text*, so
-a question appearing and being resolved is a diff — and git already records that, with author,
-timestamp and the surrounding context, better than a second log could. Worse, the feature most
-defended in it, detecting an answer that never reached the documents, solved a problem that
-existed only because there was a second place to record answers.
 
 # Token cost is a design constraint, not an afterthought
 

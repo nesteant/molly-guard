@@ -21,7 +21,7 @@ believed to be. **Nothing enters it except by publishing a change.** Never edit 
 3. `docs/conventions.md`, if it is there — this project's own rules for writing in this corpus.
    The rest of this skill is how MollyGuard works; that file is how *this* repository uses it,
    and where the two differ it wins.
-4. `lang:` in `docs/mollyguard.yml` — write all document prose in that language.
+4. `lang:` in `mollyguard.yml` — write all document prose in that language.
 
 ## The flow
 

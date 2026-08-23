@@ -3,7 +3,7 @@ title: A project's own rules reach every agent
 lang: en
 kind: feature
 capability: the-corpus
-state: draft
+state: published
 alters:
   - specs/agent-instructions
 ---

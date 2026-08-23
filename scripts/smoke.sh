@@ -1460,6 +1460,13 @@ check "and points at the decisions in force"   0 "docs/decisions/" -- sh -c '
   '"$(declare -f skill)"'; skill'
 check "and at the language to write in"        0 "mollyguard.yml" -- sh -c '
   '"$(declare -f skill)"'; skill'
+# A project's own rules reached one tool out of four when they lived in a Claude-specific file.
+# A pointer rather than a copy: composing the file into the skill would break the refutation
+# below that no skill holds corpus content, and would go stale silently four times over.
+check "and at the project's own rules"         0 "docs/conventions.md" -- sh -c '
+  '"$(declare -f skill)"'; skill'
+check "and says those rules outrank it"        0 "it wins" -- sh -c '
+  '"$(declare -f skill)"'; skill'
 # A corpus is not always at docs/. Without this the skill describes every path wrongly for a
 # corpus made with --root, and the description would not fire for it either.
 check "and says how to find the corpus"        0 "sits at the top of the repository" -- sh -c '
@@ -1559,6 +1566,20 @@ check "and fails rather than crashing on none" 1 "missing or out of date" -- sh 
 # The reason these are generated rather than written once: a skill naming a command that no
 # longer exists sends its reader to a dead end, silently, in a file nobody opens. The same check
 # the generated READMEs get, pointed at the instructions.
+# Drafting is where guessing is cheapest and costs most: the unknown goes into change.md, where
+# every other sentence in a change goes, and the gate is a human declining to approve one that is
+# visibly unresolved. The skill says plainly that the tool refuses nothing for it — an agent told
+# "the tool will stop you" about something it does not stop is one that stops trusting the rest.
+check "drafting says never to guess"           0 "Never guess" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents --tools agents >/dev/null
+  cat .agents/skills/molly-new/SKILL.md'
+check "and where the unknown is written"       0 "change.md" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents --tools agents >/dev/null
+  sed -n "/Never guess/,+2p" .agents/skills/molly-new/SKILL.md'
+check "and that nothing refuses it"            0 "refuses" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents --tools agents >/dev/null
+  sed -n "/Never guess/,+3p" .agents/skills/molly-new/SKILL.md'
+
 check "the instructions name only real commands" 0 "ok" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents >/dev/null
   help="$(node '"$BIN"' help)"
@@ -1569,6 +1590,23 @@ check "the instructions name only real commands" 0 "ok" -- sh -c '
     grep -qF -- "$named" <<<"$help" || miss="$miss [$named]"
   done
   [ -z "$miss" ] || { printf "named in the instructions, not a command:%s\n" "$miss"; exit 1; }
+  echo ok'
+
+# The same failure through the other door, and the one that actually happened: the configuration
+# moved out of the corpus and the skills went on pointing inside it for the language. Nothing
+# noticed, because `--check` compares what is installed against what this version generates and
+# both said the same wrong thing — a check that regenerates cannot catch a claim the generator is
+# also making. So the paths are read against a real corpus instead of against the text they came
+# from. `conventions.md` is excluded: the skill says "if it is there", and a project that has not
+# written one is the ordinary case.
+check "and paths that exist in a corpus"       0 "ok" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null && node '"$BIN"' agents >/dev/null
+  bad=""
+  for named in $(grep -ohE "(docs/[a-zA-Z0-9_./-]*|[^/a-zA-Z]mollyguard[.]yml)" .agents/skills/*/SKILL.md \
+                 | sed "s|^[^a-z]||" | grep -v "^docs/conventions.md$" | sort -u); do
+    [ -e "$named" ] || bad="$bad [$named]"
+  done
+  [ -z "$bad" ] || { printf "named in the instructions, not in a corpus:%s\n" "$bad"; exit 1; }
   echo ok'
 
 check "the skill stays short"                  0 "ok" -- sh -c '

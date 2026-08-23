@@ -102,7 +102,7 @@ believed to be. **Nothing enters it except by publishing a change.** Never edit 
 3. \`docs/conventions.md\`, if it is there — this project's own rules for writing in this corpus.
    The rest of this skill is how MollyGuard works; that file is how *this* repository uses it,
    and where the two differ it wins.
-4. \`lang:\` in \`docs/mollyguard.yml\` — write all document prose in that language.
+4. \`lang:\` in \`mollyguard.yml\` — write all document prose in that language.
 
 ## The flow
 
@@ -153,7 +153,7 @@ ${CORPUS}
 3. Fill in all four documents. \`change.md\` states one claim and why; \`plan.md\` how it will be
    built; \`tasks.md\` the work in order; \`tests.md\` what would have to be observed for the
    claim to be believed.
-4. Write in the corpus's language, from \`lang:\` in \`docs/mollyguard.yml\`.
+4. Write in the corpus's language, from \`lang:\` in \`mollyguard.yml\`.
 5. **Never guess at what the documents do not answer.** Write the unknown into \`change.md\` under
    its own heading and stop — locally, ask; unattended, exit non-zero. Nothing in the tool refuses
    a change for holding one, and nothing needs to: an unresolved change is one nobody approves.

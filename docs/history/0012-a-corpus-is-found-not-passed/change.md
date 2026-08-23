@@ -3,7 +3,7 @@ title: A corpus is found, not passed
 lang: en
 kind: feature
 capability: the-corpus
-state: draft
+state: published
 alters:
   - specs/agent-instructions
 ---
