@@ -1295,9 +1295,9 @@ check "and the Kiro one"                       0 "" -- sh -c '
 # has none, and a count that ever equals 32 is a command file written where nothing types.
 check "four skills into each of four roots"    0 "28 file(s) written" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents'
-check "and pre-authorises the commands"        0 "Bash(molly:*)" -- sh -c '
+check "and names the grants to add"            0 "Bash(molly:*)" -- sh -c '
   '"$(declare -f installed)"'; installed
-  cat .claude/settings.json'
+  node '"$BIN"' agents --tools claude'
 # Nothing is written into a file the project owns. Asserted as an absence, which is the only way
 # a file that should not exist can be checked at all.
 check "and writes no root instruction file"    1 "" -- sh -c '
@@ -1415,31 +1415,30 @@ check "--check reads the commands too"         1 "differs  .claude/commands/moll
   '"$(declare -f installed)"'; installed
   printf "\n" >> .claude/commands/molly/new.md
   node '"$BIN"' agents --check'
-# The settings file is the one thing here the tool does not own, so it is merged rather than
-# written — and only into a shape it understands. Anything else is reported and left exactly as
-# it is: a `permissions` holding a string would otherwise be spread character by character.
-check "existing settings survive the merge"    0 "Bash(git status:*)" -- sh -c '
+# The settings file is not written, in any state it could be in. This once merged the grants in,
+# carefully — whole when absent, otherwise parsed and given only what it lacked — and careful was
+# not the point. That file decides what runs without being asked; its contents are somebody's
+# judgement about risk, and a tool that adds itself to it has approved itself.
+check "an absent settings file stays absent"   1 "" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents --tools claude >/dev/null
+  test -e .claude/settings.json'
+check "and an existing one is untouched"       0 "identical" -- sh -c '
   cd "$(mktemp -d)" && mkdir -p .claude
   printf "%s" "{\"model\":\"opus\",\"permissions\":{\"allow\":[\"Bash(git status:*)\"],\"deny\":[\"Bash(rm:*)\"]}}" > .claude/settings.json
+  cp .claude/settings.json before
   node '"$BIN"' agents --tools claude >/dev/null
-  cat .claude/settings.json'
-check "and everything else in the file too"    0 "opus" -- sh -c '
-  cd "$(mktemp -d)" && mkdir -p .claude
-  printf "%s" "{\"model\":\"opus\",\"permissions\":{\"allow\":[\"Bash(git status:*)\"],\"deny\":[\"Bash(rm:*)\"]}}" > .claude/settings.json
-  node '"$BIN"' agents --tools claude >/dev/null
-  cat .claude/settings.json'
-check "settings that will not parse are reported" 0 "settings.json:" -- sh -c '
+  cmp -s before .claude/settings.json && echo identical'
+# Not even read. A file that will not parse used to be reported, which meant opening it — and
+# there is nothing in there this tool has any business having an opinion about.
+check "one that will not parse is not read"    0 "identical" -- sh -c '
   cd "$(mktemp -d)" && mkdir -p .claude && printf "{ not json" > .claude/settings.json
-  node '"$BIN"' agents --tools claude 2>&1 | grep -i "settings.json" || echo "not reported"'
-check "and are left exactly as they were"      0 "{ not json" -- sh -c '
-  cd "$(mktemp -d)" && mkdir -p .claude && printf "{ not json" > .claude/settings.json
+  cp .claude/settings.json before
   node '"$BIN"' agents --tools claude >/dev/null 2>&1
-  cat .claude/settings.json'
-check "a shape it does not understand is left alone" 0 "everything" -- sh -c '
-  cd "$(mktemp -d)" && mkdir -p .claude
-  printf "%s" "{\"permissions\":\"everything\"}" > .claude/settings.json
-  node '"$BIN"' agents --tools claude >/dev/null 2>&1
-  cat .claude/settings.json'
+  cmp -s before .claude/settings.json && echo identical'
+# The convenience survives the write not happening. Ten seconds of pasting, against a grant the
+# person has read — which is the difference between approving something and finding it approved.
+check "the file to paste into is named"        0 ".claude/settings.json" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents --tools claude'
 
 check "an unknown tool is refused"             1 "is not a tool this installs for" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents --tools nonesuch'
@@ -1844,28 +1843,23 @@ check "and a wrong trailer is still caught" 1 "names no change" -- sh -c '
   cd "$(mktemp -d)" && git init -q . && node '"$BIN"' init >/dev/null
   printf "chore: whatever\n\nMollyGuard: ghost\n" > m
   node '"$BIN"' commit-msg m'
-# `.git` is a *file* in a worktree or a submodule, so joining a path onto it produces one that
-# cannot be created. It crashed with ENOTDIR and exit 2 — the code reserved for a defect in the
-# tool — while standing somewhere entirely ordinary. Git is asked where the hooks are instead.
-check "the hook installs from a worktree"  0 "commit-msg" -- sh -c '
-  cd "$(mktemp -d)" && git init -q main && cd main
-  git commit -q --allow-empty -m init
-  node '"$BIN"' init >/dev/null
-  git worktree add -q ../wt >/dev/null 2>&1
-  cd ../wt && node '"$BIN"' init >/dev/null 2>&1
-  node '"$BIN"' hooks install'
-# A refusal, not a crash. Exit 1 says the tool declined; exit 2 says the tool broke.
-check "and outside a repository is refused" 1 "no git repository" -- sh -c '
-  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
-  node '"$BIN"' hooks install'
-check "the hook can be installed"          0 ".git/hooks/commit-msg" -- sh -c '
+# A passing check says nothing at all. It runs on every commit, and one that printed advice on
+# success would print it a thousand times — which is how people learn to pipe a hook to /dev/null.
+refute "a passing check says nothing"      "molly" -- sh -c '
+  '"$(declare -f committed)"'; committed
+  printf "docs: a note\n" > m
+  node '"$BIN"' commit-msg m'
+# Installing the hook was never this tool's job, and is now nobody's here. Refused as an unknown
+# command rather than accepted and ignored, which is the same argument the flag table makes.
+check "installing a hook is not a command" 1 "" -- sh -c '
   '"$(declare -f committed)"'; committed
   node '"$BIN"' hooks install'
-# The same courtesy init gives a directory it did not make. A hook already there ran something.
-check "and one already there is kept"      0 "was already here" -- sh -c '
-  '"$(declare -f committed)"'; committed
-  mkdir -p .git/hooks && printf "#!/bin/sh\necho mine\n" > .git/hooks/commit-msg
-  node '"$BIN"' hooks install'
+# Named where somebody decides how to wire it, and written into none of the three. A repository
+# with hooks already has something managing them; this composes by being a file reader.
+check "help says where to wire it instead" 0 "husky" -- sh -c '
+  node '"$BIN"' help'
+check "and names the other two as well"    0 "lefthook" -- sh -c '
+  node '"$BIN"' help'
 
 # ------------------------------------------------------- the plan and the corpus agreeing
 #
@@ -1971,6 +1965,49 @@ printf '\nthe core stays pure\n'
 # and returns values, so the same code decides the same way behind a terminal, in a server,
 # and in a test — which stops being true the moment it reads a file or a clock.
 check "core imports no filesystem, no clock" 1 "" -- grep -rlE "from 'node:|require\('node:|Date\.now|new Date" "$ROOT/packages/core/src"
+
+# --------------------------------------------------------------------- inside its corpus
+printf '\nthe tool stays inside its corpus\n'
+# MollyGuard governs a corpus of specifications. Everything it does outside one borrows authority
+# it was never given, and the borrowing is always defensible one step at a time — a hook here, a
+# permission there — which is why the boundary is grepped for rather than agreed to.
+#
+# Two greps and two runs. A grep proves the code cannot do it and passes over code nobody wrote;
+# a run proves it does not and passes over a path nobody took. Both, or neither is worth much.
+
+# One subprocess, in one file, and it reads. This fails at the import the day something shells
+# out to `git add` — which is a long way before the damage.
+check "only identity runs a subprocess"     1 "" -- sh -c '
+  grep -rl "node:child_process" '"$ROOT"'/packages/*/src | grep -v "/identity.ts$"'
+# An executable bit is wanted for a hook or a script and for nothing else, and this writes
+# markdown, YAML and JSONL. Grepping for `.git` instead would need an exception for the
+# `.github/prompts` row in the tools table, and an assertion with a carve-out gets edited.
+check "nothing makes a file executable"     1 "" -- sh -c '
+  grep -rl "chmod" '"$ROOT"'/packages/*/src'
+
+# The claim in full, run rather than argued: everything `init` leaves behind is the corpus, the
+# file that says where the corpus is, or a `molly`-namespaced instruction. Anything else is a
+# file this tool does not own, and there is no third kind.
+#
+# Both name a count they must beat before they may pass. A run that wrote nothing leaves nothing
+# foreign behind either, so the naive form of this assertion is green on a command that crashed —
+# which is the failure mode an absence is always one line away from.
+check "init writes the corpus and its own"  0 "nothing foreign" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null 2>&1
+  total=$(find . -type f | wc -l)
+  foreign=$(find . -type f | grep -v "^\./docs/" | grep -v "^\./mollyguard.yml$" | grep -v molly)
+  if [ "$total" -lt 30 ]; then echo "init wrote only $total file(s)"
+  elif [ -n "$foreign" ]; then echo "foreign: $foreign"
+  else echo "nothing foreign"; fi'
+# The same for the one command whose whole job is writing outside a corpus. Every path is
+# namespaced, so an install can be removed without surgery on anything of somebody else's.
+check "and agents writes only its own"      0 "nothing foreign" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents >/dev/null 2>&1
+  total=$(find . -type f | wc -l)
+  foreign=$(find . -type f | grep -v molly)
+  if [ "$total" -lt 28 ]; then echo "agents wrote only $total file(s)"
+  elif [ -n "$foreign" ]; then echo "foreign: $foreign"
+  else echo "nothing foreign"; fi'
 
 printf '\n'
 if [[ $FAIL -eq 0 ]]; then

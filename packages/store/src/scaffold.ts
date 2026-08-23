@@ -7,7 +7,15 @@
  * thing eventually disagree.
  *
  * Everything here is written outside the corpus, at the repository root, because that is where
- * the tools look. It is the only part of MollyGuard that touches files a corpus does not own.
+ * the tools look. It is the only part of MollyGuard that writes outside one — and every path it
+ * writes is this tool's own, `molly`-namespaced, and deletable without surgery on anything else.
+ *
+ * **A settings file is not written here, and is not written anywhere.** This once merged
+ * `Bash(molly:*)` into `.claude/settings.json`, carefully: whole when absent, otherwise parsed,
+ * given only what it lacked, and left alone in any shape it did not understand. Careful was not
+ * the point. That file decides what may run without being asked, its contents are somebody's
+ * judgement about risk, and a tool that adds itself to it has approved itself. `molly agents`
+ * names the permissions instead, and a person spends ten seconds granting one they have read.
  */
 
 import { existsSync } from 'node:fs';
@@ -62,70 +70,4 @@ async function compare(target: string, text: string): Promise<Outcome> {
   if (!existsSync(target)) return 'created';
   const current = await readFile(target, 'utf8').catch(() => undefined);
   return current === text ? 'current' : 'replaced';
-}
-
-export interface Authorised {
-  readonly outcome: Outcome;
-  /** Set when the file exists and could not be read as JSON. Nothing was touched. */
-  readonly unreadable?: string;
-}
-
-/**
- * Adds the permissions a session needs, to a file this tool does not own.
- *
- * Written whole when absent. When present it is parsed, given only the entries it lacks, and
- * written back — everything else survives, because a project's settings hold decisions nobody
- * here made. A file that will not parse is reported and left exactly as it is: guessing at the
- * contents of somebody's configuration is worse than saying it could not be read.
- */
-export async function authorise(
-  root: string,
-  file: string,
-  permissions: readonly string[],
-): Promise<Authorised> {
-  const target = join(root, ...file.split(posix.sep));
-
-  if (!existsSync(target)) {
-    await mkdir(dirname(target), { recursive: true });
-    await writeFile(target, `${JSON.stringify({ permissions: { allow: [...permissions] } }, null, 2)}\n`, 'utf8');
-    return { outcome: 'created' };
-  }
-
-  const text = await readFile(target, 'utf8').catch(() => undefined);
-  if (text === undefined) return { outcome: 'current', unreadable: `${file} could not be read` };
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch (cause) {
-    return { outcome: 'current', unreadable: `${file}: ${(cause as Error).message.split('\n')[0]}` };
-  }
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    return { outcome: 'current', unreadable: `${file} is not a settings object` };
-  }
-
-  const settings = parsed as Record<string, unknown>;
-
-  // Only merged into a shape this understands. `permissions` holding a string would otherwise be
-  // spread character by character into an object, and `allow` holding one would be thrown away —
-  // both silently, in a file whose contents are somebody else's decisions. Reporting and leaving
-  // it is the only honest answer to a shape nobody here anticipated.
-  const found = settings['permissions'];
-  if (found !== undefined && (typeof found !== 'object' || found === null || Array.isArray(found))) {
-    return { outcome: 'current', unreadable: `${file} has a "permissions" that is not an object` };
-  }
-  const block = (found ?? {}) as Record<string, unknown>;
-
-  const listed = block['allow'];
-  if (listed !== undefined && !Array.isArray(listed)) {
-    return { outcome: 'current', unreadable: `${file} has a "permissions.allow" that is not a list` };
-  }
-  const allow = ((listed ?? []) as unknown[]).filter((entry): entry is string => typeof entry === 'string');
-
-  const missing = permissions.filter((entry) => !allow.includes(entry));
-  if (missing.length === 0) return { outcome: 'current' };
-
-  settings['permissions'] = { ...block, allow: [...allow, ...missing] };
-  await writeFile(target, `${JSON.stringify(settings, null, 2)}\n`, 'utf8');
-  return { outcome: 'replaced' };
 }

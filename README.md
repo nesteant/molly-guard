@@ -54,7 +54,7 @@ and also temporary — those entries move into `docs/roadmap/` once a command ma
 
 ```bash
 npm run build
-npm run smoke     # 377 assertions
+npm run smoke     # 380 assertions
 ```
 
 Three packages: `@mollyguard/core` decides and holds no I/O, `@mollyguard/store` reads and

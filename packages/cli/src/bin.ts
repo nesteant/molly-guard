@@ -12,7 +12,7 @@ import { join } from 'node:path';
 import { agentsCommand } from './agents';
 import { newCapabilityCommand } from './capability';
 import { newChangeCommand } from './change';
-import { commitMessageCommand, hooksCommand } from './commit';
+import { commitMessageCommand } from './commit';
 import { initCommand } from './init';
 import { moveCommand } from './move';
 import { publishCommand } from './publish';
@@ -44,13 +44,24 @@ const BOOLEAN: ReadonlySet<string> = new Set(['dry-run', 'check', 'help', 'versi
  *
  * `agents` writes the instructions agent tools read, in the directories those tools look in —
  * outside the corpus by design, and deliberately holding nothing from it, so it works in a
- * repository that has not been initialised yet. `hooks` writes into `.git` for the same kind of
- * reason. `init` is not here because it is handled before this, being the one that *creates* one.
+ * repository that has not been initialised yet. `init` is not here because it is handled before
+ * this, being the one that *creates* one.
+ *
+ * **Two kinds of file are written outside a corpus, and there is no third.** The one that says
+ * where the corpus is, and the `molly`-namespaced skills and commands that teach an agent to use
+ * it. Both are this tool's own, both are named by a table, and both can be deleted without
+ * surgery on anything of somebody else's.
+ *
+ * So a command arriving here is answering a larger question than where it may run. `.git/hooks`,
+ * a settings file, a lockfile, a CI definition — each is a file this tool does not own, each was
+ * defensible on its own, and the sum of enough of them is a tool nobody can predict the reach of.
+ * The tool ships checks and integrates through exit codes; the plumbing that runs them belongs to
+ * whatever already manages plumbing in that repository.
  *
  * A set rather than a chain of comparisons, because the next command added has to answer this
  * question somewhere, and a list is a place to answer it.
  */
-const OUTSIDE: ReadonlySet<string> = new Set(['agents', 'hooks']);
+const OUTSIDE: ReadonlySet<string> = new Set(['agents']);
 
 /** Taken everywhere, so no command has to list them. */
 const GLOBAL: readonly string[] = ['root', 'help', 'version'];
@@ -81,7 +92,6 @@ const FLAGS: Readonly<Record<string, readonly string[]>> = {
   publish: ['dry-run'],
   status: ['json'],
   'commit-msg': [],
-  hooks: [],
   roadmap: ['name', 'capability', 'lang'],
   agents: ['tools', 'check'],
   version: [],
@@ -152,7 +162,6 @@ const HELP: readonly (readonly [string, string])[] = [
   ['molly status [--json]', 'every change, and where it is; --json for a reader that is not a person'],
   ['molly agents [--tools <list>]', 'the skills an agent reads; --check verifies them'],
   ['molly commit-msg <file>', 'verify a commit message names a change that exists'],
-  ['molly hooks install', 'write the commit-msg hook that runs it'],
   // Listed although it is what is being read. Every command named in a generated README, skill
   // or command file must appear here — a name missing from this list is one the harness reports
   // as not being a command, and that check is only worth having if it is complete.
@@ -168,6 +177,16 @@ function help(): number {
   for (const [usage, summary] of HELP) info(`  ${teal(usage.padEnd(32))} ${summary}`);
   info();
   info(dim('  exit 0 clean · 1 a refusal · 2 a defect in the tool'));
+  info();
+  // Named and not installed. Running the check on every commit means a hook, and a repository
+  // that wants hooks already has something managing them — ordering, chaining, staged files,
+  // installing across a team. This is a file reader that answers in an exit code, so it drops
+  // into any of the three; writing one of these lines into somebody's toolchain would be this
+  // tool taking over a job three tools already do better.
+  info(dim('  molly commit-msg runs on a commit message — wire it where hooks are managed:'));
+  info(dim("    husky        .husky/commit-msg    →  molly commit-msg \"$1\""));
+  info(dim('    lefthook     commit-msg job       →  run: molly commit-msg {1}'));
+  info(dim('    pre-commit   commit-msg stage     →  entry: molly commit-msg'));
   return 0;
 }
 
@@ -349,16 +368,6 @@ async function main(): Promise<void> {
     case 'commit-msg':
       process.exit(await commitMessageCommand(found, { file: args.positional[0] }));
       break;
-
-    case 'hooks': {
-      const verb = args.positional[0];
-      if (verb !== 'install') {
-        warn('molly hooks install');
-        process.exit(1);
-      }
-      process.exit(await hooksCommand(process.cwd(), given ?? DEFAULT_ROOT));
-      break;
-    }
 
     case 'status':
       process.exit(await statusCommand(found, { json: args.flags.has('json') }));

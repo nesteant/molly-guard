@@ -26,8 +26,8 @@ import {
   scaffoldFor,
   tool,
 } from '@mollyguard/core';
-import { authorise, checkScaffold, writeScaffold } from '@mollyguard/store';
-import { amber, bold, dim, fail, green, info, warn } from './ui';
+import { checkScaffold, writeScaffold } from '@mollyguard/store';
+import { amber, bold, dim, fail, green, info, teal } from './ui';
 
 export interface AgentsOptions {
   /** Comma-separated ids, or undefined for the tools every corpus gets. */
@@ -64,17 +64,6 @@ export async function agentsCommand(root: string, options: AgentsOptions): Promi
     info(`  ${mark} ${file.path}`);
   }
 
-  for (const t of chosen) {
-    if (t.settings === undefined) continue;
-    const result = await authorise(root, t.settings, PERMISSIONS);
-    if (result.unreadable !== undefined) {
-      warn(`${amber('!')} ${dim(`${result.unreadable} — add ${PERMISSIONS.join(', ')} to it by hand`)}`);
-      continue;
-    }
-    const mark = result.outcome === 'created' ? green('+') : result.outcome === 'replaced' ? bold('~') : dim('=');
-    info(`  ${mark} ${t.settings} ${dim('— the molly commands, pre-authorised')}`);
-  }
-
   info();
   info(dim(`  ${written.length === 0 ? 'already current' : `${written.length} file(s) written`}`));
   // Who each directory just served. One file is read by ten tools, and an install that left
@@ -105,6 +94,21 @@ export async function agentsCommand(root: string, options: AgentsOptions): Promi
       info(`  ${line}`);
       info(dim(`    typed in ${titles.join(', ')}`));
     }
+  }
+
+  // Named, never written. This used to merge the grants into the file itself, carefully — and
+  // careful was not the point. A settings file decides what runs without being asked; its
+  // contents are somebody's judgement about risk, and a tool that writes itself into one has
+  // approved itself in the place that exists to approve it. Ten seconds of pasting is the whole
+  // cost, and the person has read what they granted.
+  //
+  // Printed whether or not it is already there. Reading the file to find out would put the tool
+  // back to inspecting a configuration it has no business in, to save a line.
+  const settings = chosen.filter((t) => t.settings !== undefined);
+  if (settings.length > 0) {
+    info();
+    info(dim('  to run the molly commands without a prompt each time, add these yourself:'));
+    for (const t of settings) info(`    ${teal(t.settings ?? '')} ${dim(`— permissions.allow: ${PERMISSIONS.join(', ')}`)}`);
   }
   return 0;
 }
