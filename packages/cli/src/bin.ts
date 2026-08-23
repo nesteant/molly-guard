@@ -12,7 +12,6 @@ import { join } from 'node:path';
 import { agentsCommand } from './agents';
 import { newCapabilityCommand } from './capability';
 import { newChangeCommand } from './change';
-import { commitMessageCommand } from './commit';
 import { initCommand } from './init';
 import { moveCommand } from './move';
 import { publishCommand } from './publish';
@@ -91,7 +90,6 @@ const FLAGS: Readonly<Record<string, readonly string[]>> = {
   move: [],
   publish: ['dry-run'],
   status: ['json'],
-  'commit-msg': [],
   roadmap: ['name', 'capability', 'lang'],
   agents: ['tools', 'check'],
   version: [],
@@ -161,7 +159,6 @@ const HELP: readonly (readonly [string, string])[] = [
   ['molly publish [<change>]', 'file its documents into the knowledge base'],
   ['molly status [--json]', 'every change, and where it is; --json for a reader that is not a person'],
   ['molly agents [--tools <list>]', 'the skills an agent reads; --check verifies them'],
-  ['molly commit-msg <file>', 'verify a commit message names a change that exists'],
   // Listed although it is what is being read. Every command named in a generated README, skill
   // or command file must appear here — a name missing from this list is one the harness reports
   // as not being a command, and that check is only worth having if it is complete.
@@ -177,16 +174,6 @@ function help(): number {
   for (const [usage, summary] of HELP) info(`  ${teal(usage.padEnd(32))} ${summary}`);
   info();
   info(dim('  exit 0 clean · 1 a refusal · 2 a defect in the tool'));
-  info();
-  // Named and not installed. Running the check on every commit means a hook, and a repository
-  // that wants hooks already has something managing them — ordering, chaining, staged files,
-  // installing across a team. This is a file reader that answers in an exit code, so it drops
-  // into any of the three; writing one of these lines into somebody's toolchain would be this
-  // tool taking over a job three tools already do better.
-  info(dim('  molly commit-msg runs on a commit message — wire it where hooks are managed:'));
-  info(dim("    husky        .husky/commit-msg    →  molly commit-msg \"$1\""));
-  info(dim('    lefthook     commit-msg job       →  run: molly commit-msg {1}'));
-  info(dim('    pre-commit   commit-msg stage     →  entry: molly commit-msg'));
   return 0;
 }
 
@@ -363,10 +350,6 @@ async function main(): Promise<void> {
           check: args.flags.has('check'),
         }),
       );
-      break;
-
-    case 'commit-msg':
-      process.exit(await commitMessageCommand(found, { file: args.positional[0] }));
       break;
 
     case 'status':

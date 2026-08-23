@@ -30,14 +30,6 @@ export interface CorpusConfig {
   /** Name pattern per area. Absent means `{slug}` — the name is the slug, as it always was. */
   readonly naming: Readonly<Record<string, string>>;
   /**
-   * Conventional-commit types that must name a change, e.g. `['feat', 'fix']`.
-   *
-   * Empty is the default and means the tool requires a trailer of nothing. It still refuses one
-   * that names a change which does not exist — that half is not a policy, because a trailer
-   * pointing at nothing is wrong under every convention.
-   */
-  readonly commitRequires: readonly string[];
-  /**
    * What in the file could not be used, one line each.
    *
    * Reported by the caller and never swallowed. A policy the tool could not read is a policy
@@ -46,7 +38,7 @@ export interface CorpusConfig {
   readonly problems: readonly string[];
 }
 
-const EMPTY: CorpusConfig = { root: undefined, lang: undefined, naming: {}, commitRequires: [], problems: [] };
+const EMPTY: CorpusConfig = { root: undefined, lang: undefined, naming: {}, problems: [] };
 
 export async function readConfig(file: string): Promise<CorpusConfig> {
   if (!existsSync(file)) return EMPTY;
@@ -96,34 +88,7 @@ export async function readConfig(file: string): Promise<CorpusConfig> {
     }
   }
 
-  return { root, lang, naming, commitRequires: commitRequires(fields, problems), problems };
-}
-
-/**
- * The types a corpus asks a change-naming trailer of.
- *
- * `commit: { requires: [...] }`. A shape that is not a list of strings is named rather than
- * quietly read as none — a policy the tool could not understand is one the repository believes
- * is being enforced, which is the failure this whole file is careful about.
- */
-function commitRequires(fields: Record<string, unknown>, problems: string[]): readonly string[] {
-  const declared = fields['commit'];
-  if (declared === undefined || declared === null) return [];
-
-  if (typeof declared !== 'object' || Array.isArray(declared)) {
-    problems.push(`${CONFIG_FILE}: commit: must be a mapping, e.g. commit: { requires: [feat] }`);
-    return [];
-  }
-
-  const requires = (declared as Record<string, unknown>)['requires'];
-  if (requires === undefined || requires === null) return [];
-
-  if (!Array.isArray(requires) || requires.some((type) => typeof type !== 'string')) {
-    problems.push(`${CONFIG_FILE}: commit: requires: must be a list of commit types, e.g. [feat, fix]`);
-    return [];
-  }
-
-  return (requires as string[]).map((type) => type.toLowerCase());
+  return { root, lang, naming, problems };
 }
 
 /** The pattern an area mints by. `{slug}` where nothing was declared. */

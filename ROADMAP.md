@@ -406,6 +406,15 @@ Then one of two, and the second is preferred:
    independent signal — two records of one fact, compared, which is the pattern already trusted
    here.
 
+   **The link is derived, never declared.** The commit behind an event is the one that appended
+   that line to `history.jsonl`, found by path and content — arithmetic, the same as folding.
+   It is emphatically not a `MollyGuard:` trailer the author wrote. That check existed, was
+   taken back out, and reaching for it here would rebuild it through the ledger door: a rule
+   about what a commit *says* is the repository's to write and its linter's to enforce, and a
+   reference the author supplies is unverifiable in exactly the way this entry is trying to fix
+   — it names an id, not the work. Whatever `verify` becomes, it reads commits and never their
+   messages. The smoke suite greps for the three shapes it took.
+
 **This blocks nothing except the entry below**, which assumes the ledger keeps its role.
 
 ---

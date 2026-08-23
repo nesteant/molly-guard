@@ -14,7 +14,6 @@ export * from './areas';
 export * from './capability';
 export * from './change';
 export * from './choices';
-export * from './commit';
 export * from './frontmatter';
 export * from './lifecycle';
 export * from './naming';

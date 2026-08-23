@@ -1783,84 +1783,6 @@ refute "a publication with no policy is untouched" "is not the name this corpus 
   '"$(declare -f seeded)"'; seeded
   node '"$BIN"' publish fed'
 
-# ------------------------------------------------------------------ the commit trailer
-#
-# A commit naming a change must name one that exists. The half that is the tool's, because the
-# trailer holds a MollyGuard id and nothing else knows what those address; which commits must
-# carry one stays the project's, declared rather than assumed.
-printf '\nthe commit trailer\n'
-
-committed() {
-  cd "$(mktemp -d)" || exit 2
-  git init -q .
-  node "$BIN" init >/dev/null
-  printf 'root: docs\nlang: en\ncommit:\n  requires: [feat, fix]\n' > mollyguard.yml
-  node "$BIN" change new "Real" --name real >/dev/null
-}
-check "a trailer naming a change passes"   0 "" -- sh -c '
-  '"$(declare -f committed)"'; committed
-  printf "feat: add it\n\nMollyGuard: real\n" > m
-  node '"$BIN"' commit-msg m'
-check "one naming nothing is refused"      1 "names no change" -- sh -c '
-  '"$(declare -f committed)"'; committed
-  printf "feat: add it\n\nMollyGuard: ghost\n" > m
-  node '"$BIN"' commit-msg m'
-check "a required type with none is refused" 1 "must name the change" -- sh -c '
-  '"$(declare -f committed)"'; committed
-  printf "feat: add it\n" > m
-  node '"$BIN"' commit-msg m'
-check "a type nobody asked of passes"      0 "" -- sh -c '
-  '"$(declare -f committed)"'; committed
-  printf "docs: tidy up\n" > m
-  node '"$BIN"' commit-msg m'
-# Generated messages are not a person'"'"'s to edit, and a rule applying to them is a rule that
-# fires on the tool that wrote them.
-check "a merge commit is not asked"        0 "" -- sh -c '
-  '"$(declare -f committed)"'; committed
-  printf "Merge branch main into topic\n" > m
-  node '"$BIN"' commit-msg m'
-# Git strips the comment block after the hook has seen it, so a trailer inside it is one the
-# author did not write.
-check "a trailer in the comment block is not one" 1 "must name the change" -- sh -c '
-  '"$(declare -f committed)"'; committed
-  printf "feat: add it\n\n# MollyGuard: real\n" > m
-  node '"$BIN"' commit-msg m'
-# The published half of the corpus. A commit written six months ago names a change that has long
-# since been archived, and a check knowing only what is in flight refuses the repository'"'"'s past.
-check "an archived change still resolves"  0 "" -- sh -c '
-  '"$(declare -f committed)"'; committed
-  mkdir -p docs/history/old
-  printf -- "---\ntitle: Old\nlang: en\nkind: feature\nstate: published\n---\n" > docs/history/old/change.md
-  printf "fix: repair it\n\nMollyGuard: old\n" > m
-  node '"$BIN"' commit-msg m'
-# A corpus declaring nothing gets the resolution and no requirement — the tool imposing a commit
-# convention on every repository that installs it is the thing it is careful never to do.
-check "no policy means nothing is required" 0 "" -- sh -c '
-  cd "$(mktemp -d)" && git init -q . && node '"$BIN"' init >/dev/null
-  printf "feat: add it\n" > m
-  node '"$BIN"' commit-msg m'
-check "and a wrong trailer is still caught" 1 "names no change" -- sh -c '
-  cd "$(mktemp -d)" && git init -q . && node '"$BIN"' init >/dev/null
-  printf "chore: whatever\n\nMollyGuard: ghost\n" > m
-  node '"$BIN"' commit-msg m'
-# A passing check says nothing at all. It runs on every commit, and one that printed advice on
-# success would print it a thousand times — which is how people learn to pipe a hook to /dev/null.
-refute "a passing check says nothing"      "molly" -- sh -c '
-  '"$(declare -f committed)"'; committed
-  printf "docs: a note\n" > m
-  node '"$BIN"' commit-msg m'
-# Installing the hook was never this tool's job, and is now nobody's here. Refused as an unknown
-# command rather than accepted and ignored, which is the same argument the flag table makes.
-check "installing a hook is not a command" 1 "" -- sh -c '
-  '"$(declare -f committed)"'; committed
-  node '"$BIN"' hooks install'
-# Named where somebody decides how to wire it, and written into none of the three. A repository
-# with hooks already has something managing them; this composes by being a file reader.
-check "help says where to wire it instead" 0 "husky" -- sh -c '
-  node '"$BIN"' help'
-check "and names the other two as well"    0 "lefthook" -- sh -c '
-  node '"$BIN"' help'
-
 # ------------------------------------------------------- the plan and the corpus agreeing
 #
 # A change publishes and its roadmap entry survives, so the plan goes on planning something that
@@ -1984,6 +1906,20 @@ check "only identity runs a subprocess"     1 "" -- sh -c '
 # `.github/prompts` row in the tools table, and an assertion with a carve-out gets edited.
 check "nothing makes a file executable"     1 "" -- sh -c '
   grep -rl "chmod" '"$ROOT"'/packages/*/src'
+# And the command that would have wanted one is not a command. Installing a hook was never this
+# tool's job; refused as an unknown verb rather than accepted and ignored, so re-adding it has to
+# be a decision somebody makes on purpose.
+check "installing a hook is not a command"  1 "unknown command" -- m hooks install
+# Nor is checking a commit message, which is the same boundary from the other side. A commit is
+# somebody else's record: the tool owns the corpus, and a rule about what a commit says is the
+# repository's to write and its linter's to enforce.
+check "checking a commit is not a command"  1 "unknown command" -- m commit-msg msg.txt
+# Grepped as well as run, because a run only covers the path somebody took. These are the three
+# shapes that functionality had — the trailer, the hook name, the policy key — and any of them
+# reappearing in the source fails here long before it ships. `commit` alone is not the grep: the
+# word is ordinary prose in this codebase, and an assertion that cries wolf is one people delete.
+check "nothing reads a commit message"      1 "" -- sh -c '
+  grep -rlE "commit-msg|MollyGuard:|commitRequires" '"$ROOT"'/packages/*/src'
 
 # The claim in full, run rather than argued: everything `init` leaves behind is the corpus, the
 # file that says where the corpus is, or a `molly`-namespaced instruction. Anything else is a
