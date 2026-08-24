@@ -2419,6 +2419,69 @@ check "between names the states, from a literal table" 0 "ok" -- sh -c '
     console.log("ok");
   '"'"''
 
+# ------------------------------------------ a corpus arrives with a place for its own rules
+#
+# Four installed skills point at <root>/conventions.md and rank it above their own contents, and
+# until now nothing told a project to write one. A pointer whose target is absent teaches an
+# agent that the pointer is decorative — and the rules go somewhere worse instead: a tool-owned
+# explainer, where they cannot be told from the tool's own words.
+printf '\n%s\n' "$(dim 'a place for the project own rules')"
+
+check "init writes it"                     0 "" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; test -f docs/conventions.md'
+check "and names it in the summary"        0 "conventions.md" -- sh -c '
+  cd "$(mktemp -d "$WORK/tmp.XXXXXX")"; node "$BIN" init'
+check "it invites and does not instruct"   0 "no rules of its own" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; cat docs/conventions.md'
+
+# The assertion that would have caught the original gap: the path the skills name, resolved
+# against a corpus init has just made, rather than against the text the skills came from.
+check "every skill points at a file that is there" 0 "ok" -- sh -c '
+  '"$(declare -f scratch)"'; scratch
+  n=0
+  for s in .claude/skills/molly-*/SKILL.md; do
+    grep -o "docs/[a-z.]*\.md" "$s" | sort -u | while read -r path; do
+      test -e "$path" || { echo "$s names $path, which is not there"; exit 1; }
+    done || exit 1
+    n=$((n + 1))
+  done
+  [ "$n" -ge 5 ] || { echo "only $n skills were read"; exit 1; }
+  echo ok'
+
+# An existing one is a project that already wrote its rules, and is worth more than the stub.
+check "one already there is kept"          0 "Ours." -- sh -c '
+  cd "$(mktemp -d "$WORK/tmp.XXXXXX")"; mkdir -p docs
+  printf "Ours.\n" > docs/conventions.md
+  node "$BIN" init >/dev/null
+  cat docs/conventions.md'
+check "and is named among what was kept"   0 "docs/conventions.md" -- sh -c '
+  cd "$(mktemp -d "$WORK/tmp.XXXXXX")"; mkdir -p docs
+  printf "Ours.\n" > docs/conventions.md
+  node "$BIN" init'
+
+# The upgrade path, for a corpus made before the file existed. Said once, by the command that
+# installed the pointer, and never as a finding in `status`.
+check "agents names it when it is absent"  0 "conventions.md is not there" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/conventions.md; node "$BIN" agents'
+refute "and says nothing when it is there" "is not there" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; node "$BIN" agents'
+refute "nor outside a corpus at all"        "is not there" -- sh -c '
+  cd "$(mktemp -d "$WORK/tmp.XXXXXX")"; node "$BIN" agents'
+check "and never refuses for it"           0 "agent instructions" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/conventions.md; node "$BIN" agents'
+
+# A fresh corpus must not open with a complaint about a file the tool just wrote.
+check "a fresh corpus reports nothing"     0 "ok" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; node "$BIN" status >/dev/null && echo ok'
+
+# Nothing reads it. The whole value of the pointer is that the tool has no opinion about what is
+# behind it, so this is asserted rather than assumed.
+check "nothing reads what is in it"        0 "ok" -- sh -c '
+  '"$(declare -f scratch)"'; scratch
+  printf "\x00: [not yaml\n\x00\n" > docs/conventions.md
+  node "$BIN" status >/dev/null || { echo "status read it"; exit 1; }
+  node "$BIN" change new "A" --name a >/dev/null || { echo "change new read it"; exit 1; }
+  echo ok'
 # --------------------------------------------- publishing names what it moved out from under
 #
 # Publishing moves changes/<name>/ into history/<name>/ and nothing else in the corpus is told,

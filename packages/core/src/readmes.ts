@@ -12,6 +12,61 @@
 
 import { AREAS } from './areas';
 
+/**
+ * The file a project writes its own rules in, and the only one here it is expected to fill.
+ *
+ * Every other explainer says what a directory holds. This one is an invitation, and it exists
+ * because the invitation was the half that was missing: four installed skills already point at
+ * `<root>/conventions.md` and rank it above their own contents, and nothing anywhere told a
+ * project to write one. The mechanism shipped without it, so the rules went into `CLAUDE.md` —
+ * reaching one of the four directories `molly agents` writes into — and into the explainers this
+ * module generates, where they cannot be told from the tool's own words.
+ *
+ * **Headings and an explanation of each, and not one convention.** The tool has no opinion about
+ * how a project works, and a template that arrived holding one would make that opinion every
+ * corpus's opinion — `init` seeds no example anywhere else for exactly this reason, and this is
+ * the one file where a seeded opinion would be worst.
+ *
+ * A corpus that adopts this and writes nothing under the headings is a corpus with no project
+ * rules, which is a real answer and the common one.
+ */
+export const CONVENTIONS_README = (dir: string): string => `# How this project works in its own corpus
+
+The installed skills say how a MollyGuard corpus works in general. This says how **this** project
+uses it, and the skills say that where the two differ, this file wins.
+
+It is the one file in \`${dir}/\` you are expected to write. Nothing reads it but a person and
+whatever agent they are driving, nothing checks it, and leaving it as it is means this project has
+no rules of its own beyond the tool's — which is a real answer.
+
+Everything below is a heading somebody found they needed. Delete the ones you do not.
+
+## What needs a change, and what does not
+
+Where the line falls here. Every project draws it somewhere, and an agent that guesses draws it
+somewhere else each time.
+
+## How this project writes a change
+
+Anything about the four documents that is this project's taste rather than the tool's rule —
+how much detail a plan carries, what evidence counts in \`tests.md\`, when a decision is warranted.
+
+## What is never edited by hand
+
+The tool refuses some of this and cannot refuse the rest. Say which files here are somebody's
+output rather than somebody's work.
+
+## References between documents
+
+How a document points at another one. Worth stating, because publishing moves a change into
+\`history/\` and a relative path written to a sibling change stops resolving when it does.
+
+## Before finishing
+
+The commands that have to pass. \`molly status\` exiting \`0\` is a reasonable definition of done
+for the corpus; whatever builds and tests this project is the rest of it.
+`;
+
 export const ROOT_README = (dir: string): string => `# ${dir}/
 
 The knowledge base, and the changes that alter it.
@@ -33,6 +88,11 @@ truth, or a record of what happened.
 | \`history/\` | changes that were published, kept whole | \`molly publish\` |
 
 Each one has a README saying what belongs in it.
+
+\`conventions.md\` sits beside them and is **yours**. The installed agent skills say how
+MollyGuard works and point at that file for how *this* project uses it — and say that where the
+two differ, this project wins. Nothing reads it but a person and whatever agent they are driving.
+It arrives empty of opinions, because the tool has none to put in it.
 
 **Nothing enters the knowledge base except by publishing a change.** A change carries the
 documents it proposes in \`changes/<name>/publish/\`, mirroring this directory, and

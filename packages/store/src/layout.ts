@@ -33,6 +33,16 @@ export const ATTRIBUTES_FILE = '.gitattributes';
 export const LEDGER_MERGE = `${HISTORY_FILE} merge=union`;
 
 /**
+ * The file a project writes its own rules for working in this corpus in.
+ *
+ * Named here rather than in the skills that point at it, so the path exists in one place — and
+ * fixed rather than configurable: four generated skills name it, and a corpus that could move it
+ * would be a corpus where the config and the skills can disagree about where a project's rules
+ * are. The skills are what an agent actually reads, so they win, so there is nothing to declare.
+ */
+export const CONVENTIONS_FILE = 'conventions.md';
+
+/**
  * The name of the file a directory explains itself in.
  *
  * Nothing reads it. Every directory carries one because git tracks no empty directory, so a

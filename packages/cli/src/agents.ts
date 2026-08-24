@@ -13,8 +13,18 @@
  * Nothing here reads the corpus. The skills say *where* the decisions, the capabilities and the
  * language live and never what they say, which is what makes this an upgrade-time command:
  * publishing a change cannot make it stale, so nobody has to remember to re-run it.
+ *
+ * **One exception, and it is about what was just written rather than about the corpus.** The
+ * skills point at `<root>/conventions.md`, and a corpus made before that file existed has no
+ * such target — `init` writes it and `init` is the one command an existing corpus cannot run.
+ * So this looks for one, best-effort, and names the file if it is missing. It reads nothing from
+ * the corpus but whether a single path exists, it never refuses, and it says nothing at all when
+ * there is no corpus to ask: this command has to work in a repository nobody has initialised,
+ * which is the moment somebody most needs the instructions.
  */
 
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   PERMISSIONS,
   SKILLS,
@@ -26,7 +36,7 @@ import {
   scaffoldFor,
   tool,
 } from '@mollyguard/core';
-import { checkScaffold, writeScaffold } from '@mollyguard/store';
+import { CONVENTIONS_FILE, checkScaffold, locateCorpus, writeScaffold } from '@mollyguard/store';
 import { amber, bold, dim, fail, green, info, teal } from './ui';
 
 export interface AgentsOptions {
@@ -75,6 +85,20 @@ export async function agentsCommand(root: string, options: AgentsOptions): Promi
     info(dim(`  ${directory} — read by ${served.map((t) => t.title).join(', ')}`));
   }
   info(dim('  The skills name where truth lives; they hold no decision, capability or language.'));
+
+  // Said once, here, and never as a finding in `molly status`: a project with no conventions is
+  // not a corpus with a problem, and a listing that nags about an optional file teaches people
+  // to read past its findings. This is the moment the sentence is actionable, because it is the
+  // moment the pointer was installed.
+  const corpus = await locateCorpus(root, undefined);
+  if (corpus !== undefined && !existsSync(join(corpus.root, CONVENTIONS_FILE))) {
+    info();
+    info(
+      `  ${amber('!')} ${corpus.dir}/${CONVENTIONS_FILE} ${dim('is not there, and these skills point at it')}`,
+    );
+    info(dim(`    it is where this project's own rules go, and they win over the skills'`));
+    info(dim('    run `molly init` to write the empty one, or write it yourself'));
+  }
 
   // What can now be typed. A command file is invisible until somebody guesses its name, and the
   // name is not something they can reason their way to: the same four commands are `/molly:new`

@@ -22,10 +22,17 @@
 
 import { mkdir, readFile } from 'node:fs/promises';
 import { join, posix, relative } from 'node:path';
-import { ROOT_README, STATE_README, allDirectories, readmeFor } from '@mollyguard/core';
+import {
+  CONVENTIONS_README,
+  ROOT_README,
+  STATE_README,
+  allDirectories,
+  readmeFor,
+} from '@mollyguard/core';
 import {
   ATTRIBUTES_FILE,
   CONFIG_FILE,
+  CONVENTIONS_FILE,
   HISTORY_FILE,
   LEDGER_MERGE,
   README_FILE,
@@ -126,6 +133,13 @@ export async function initCommand(
   await put(README_FILE, ROOT_README(dir));
   await put(posix.join(STATE_DIR, README_FILE), STATE_README);
 
+  // The one file here a project is expected to fill in, and the only reason it is written at all
+  // is that four installed skills already point at it. A pointer whose target is absent teaches
+  // an agent that the pointer is decorative — and an agent that has learned one instruction is
+  // decorative reads the next one the same way. Placed like everything else, so a project that
+  // already had a `conventions.md` keeps it and is told.
+  await put(CONVENTIONS_FILE, CONVENTIONS_README(dir));
+
   const directories = allDirectories();
   for (const directory of directories) {
     await mkdir(join(root, directory), { recursive: true });
@@ -140,6 +154,7 @@ export async function initCommand(
   info(`  ${dim('areas')}       ${directories.join(', ')}`);
   info(`  ${dim('readme')}      ${readmes} file(s) — one per directory, saying what belongs in it`);
   info(`  ${dim('knowledge')}   ${dim('empty — nothing is true until a change is published')}`);
+  info(`  ${dim('yours')}       ${CONVENTIONS_FILE} ${dim('— this project\'s own rules, empty and pointed at by every skill')}`);
   info(`  ${dim('language')}    ${lang}`);
   info(`  ${dim('agents')}      instructions, in the directories agent tools read`);
   info();

@@ -171,3 +171,9 @@
 {"node":"changes/0022-publishing-names-what-it-moved-out-from-under","at":"2026-08-24T18:48:38.595Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0022-publishing-names-what-it-moved-out-from-under","at":"2026-08-24T18:48:38.697Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0022-publishing-names-what-it-moved-out-from-under","at":"2026-08-24T18:49:48.149Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:50:17.799Z","kind":"transition","from":"draft","to":"review","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:50:17.906Z","kind":"transition","from":"review","to":"approved","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:50:18.010Z","kind":"transition","from":"approved","to":"in_progress","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:56:18.742Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:56:18.851Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:56:18.952Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
