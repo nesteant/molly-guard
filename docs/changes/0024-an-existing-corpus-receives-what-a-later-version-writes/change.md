@@ -82,5 +82,5 @@ hand-edited two explainers after initialising, and one of them now contradicts t
 does exactly this comparison for the instructions installed *outside* the corpus, and nothing does
 it inside. It is a different claim from this one, because it has to answer what happens when a
 project has deliberately made a file its own. Named so the gap is on the record. Related:
-[`0023`](../0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules/change.md), which gives
-a project's rules somewhere to live that is not a file the tool generates.
+[a project's own rules reach every agent](../../specs/agent-instructions/spec.md), which gives
+them somewhere to live that is not a file the tool generates.

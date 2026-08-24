@@ -3,7 +3,7 @@ title: A corpus arrives with a place for the project's own rules
 lang: en
 kind: feature
 capability: the-corpus
-state: deployed
+state: published
 alters:
   - specs/agent-instructions
 ---

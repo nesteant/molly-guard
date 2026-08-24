@@ -177,3 +177,4 @@
 {"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:56:18.742Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:56:18.851Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:56:18.952Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:56:42.566Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
