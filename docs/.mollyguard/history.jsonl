@@ -170,3 +170,4 @@
 {"node":"changes/0022-publishing-names-what-it-moved-out-from-under","at":"2026-08-24T18:48:38.485Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0022-publishing-names-what-it-moved-out-from-under","at":"2026-08-24T18:48:38.595Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0022-publishing-names-what-it-moved-out-from-under","at":"2026-08-24T18:48:38.697Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0022-publishing-names-what-it-moved-out-from-under","at":"2026-08-24T18:49:48.149Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}

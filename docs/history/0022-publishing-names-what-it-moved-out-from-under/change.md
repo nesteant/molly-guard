@@ -3,7 +3,7 @@ title: Publishing names what it moved out from under
 lang: en
 kind: feature
 capability: the-corpus
-state: deployed
+state: published
 alters:
   - specs/publishing-a-change
   - specs/what-a-command-may-never-do-silently
