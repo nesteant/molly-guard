@@ -69,16 +69,28 @@ What would have to be observed for the claim above to be believed. Written befor
 because evidence chosen afterwards is chosen to fit what happened.
 `,
 
-  roadmap: `# What is meant to be true later
+  roadmap: `# What this slice is for
 
-One statement of intent, in the shape of a record: what should hold, and why it is worth doing.
-Not a plan — how it gets built is the change's business, and a long plan here is a document the
-corpus cannot check and nobody re-reads.
+The business need this body of work answers, in the terms whoever asked for it used. Not a plan
+for building it — that is each change's business.
 
-# Why it is not a change yet
+# The features, in order
 
-What is still unknown, or what has to land first. An entry that could be specified today is one
-somebody should be writing \`molly change new\` for instead.
+What is in this slice, in the order they are wanted, each with a line on why it sits where it
+sits. The order is an argument and not a number: "this comes first because it unblocks the other
+three" is worth more than a rank, and it is what somebody reads to decide what to do next.
+
+Say what matters most where it differs from what comes first. They are different questions.
+
+# What has been decided
+
+Choices already made about this slice, so they are not relitigated once per change. A constraint
+that binds work beyond this slice is a decision, and belongs in \`decisions/\` by way of a change.
+
+# What is done
+
+Features already realised, and the change that realised each. Moving a feature here is a normal
+edit — no change alters a slice, so keeping this true is somebody writing it down.
 `,
 
   capability: `# What this is responsible for

@@ -145,16 +145,17 @@ molly publish <change> [--dry-run]
 
 ${CORPUS}
 
-1. \`molly status\` for the capabilities and what \`docs/roadmap/\` already intends — contradicting
-   an entry there is an argument somebody has later. Read \`docs/decisions/\`, and
+1. \`molly status\` for the capabilities and what \`docs/roadmap/\` already intends —
+   contradicting a slice there is an argument somebody has later. Read \`docs/decisions/\`, and
    \`docs/conventions.md\` if it is there: that is how *this* repository writes, and it wins.
-2. \`molly change new "<title>" --capability <name>\`, with \`--alters specs/<name>\` per document
-   it changes and \`--realises <entry>\` where a roadmap entry already intends it.
-3. Fill in all four documents. \`change.md\` states one claim and why; \`plan.md\` how it will be
+2. **If the work is in a roadmap slice, read it first** — the \`molly-roadmap\` skill acts on one.
+3. \`molly change new "<title>" --capability <name>\`, with \`--alters specs/<name>\` per document
+   it changes and \`--realises <slice>\` where a slice already intends it.
+4. Fill in all four documents. \`change.md\` states one claim and why; \`plan.md\` how it will be
    built; \`tasks.md\` the work in order; \`tests.md\` what would have to be observed for the
    claim to be believed.
-4. Write in the corpus's language, from \`lang:\` in \`mollyguard.yml\`.
-5. **Never guess at what the documents do not answer.** Write the unknown into \`change.md\` under
+5. Write in the corpus's language, from \`lang:\` in \`mollyguard.yml\`.
+6. **Never guess at what the documents do not answer.** Write the unknown into \`change.md\` under
    its own heading and stop — locally, ask; unattended, exit non-zero. Nothing in the tool refuses
    a change for holding one, and nothing needs to: an unresolved change is one nobody approves.
 
@@ -211,6 +212,37 @@ ${CORPUS}
 The engine composes no text: you write every document and it verifies and files them. Everything
 it writes is in the working tree and nothing is committed. Report what landed so it can be
 reviewed as a diff.
+`,
+  },
+  {
+    id: 'roadmap',
+    description:
+      'Read a MollyGuard roadmap slice and turn what is next in it into a change. Use when asked what to build next, to plan or prioritise work, to draft the next change, or to add something to the plan, in a repository with a mollyguard.yml.',
+    summary: 'Read the plan and turn what is next in it into a change',
+    body: `# Read the plan
+
+${CORPUS}
+
+\`docs/roadmap/\` holds **slices**: one document per body of planned work — what it is for, its
+features **in the order they are wanted**, what has been decided, and what is done.
+
+**None of it is parsed.** The order is an argument in prose and you are the reader it was written
+for; there is no \`order:\` field to sort on. A slice names no capability — it crosses them.
+
+1. \`molly status\` — the slices, and every change with its state.
+2. Read the whole slice. The order is stated in it and derivable from nothing else.
+3. The next feature is the first one not under *what is done* and not already claimed by a change
+   in flight. A change already drafted is the usual reason the next thing is not the first thing.
+4. \`molly change new "<title>" --capability <name> --realises <slice>\`, then the drafting skill.
+
+**The title comes from the feature, not the slice** — one named after a body of work makes several
+claims. Several changes realise one slice over its life, and \`molly status\` reports that rather
+than treating the slice as finished. Never invent a feature the slice does not name: say so, and
+offer to add it. Never reorder or reprioritise unasked — the order is somebody's judgement. Never
+mark a feature done that has not published.
+
+No change alters a slice, so keeping it true is a direct edit: move a realised feature under
+*what is done* and name the change that did it. \`molly roadmap new "<title>"\` starts one.
 `,
   },
 ];

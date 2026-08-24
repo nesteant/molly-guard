@@ -31,6 +31,7 @@ import {
 import { identity } from './identity';
 import { langFor } from './lang';
 import { nameFor } from './naming';
+import { Choice, chooseFrom } from './pick';
 import { bold, dim, fail, green, info, teal } from './ui';
 
 export interface NewChangeOptions {
@@ -62,15 +63,15 @@ export async function newChangeCommand(
   const slug = await nameFor(corpus, CHANGES, options.title, options.name);
 
   // Resolved before anything is written, so a name that does not exist leaves no half-made
-  // bundle behind — the same property the collision check has, and the same reason for it.
-  const capability =
-    options.capability === undefined ? undefined : await requireCapability(root, options.capability);
+  // bundle behind — the same property the collision check has, and the same reason for it. And
+  // asked before the write for the same reason: a person who walks away from the question leaves
+  // nothing behind either.
+  const capability = await resolveCapability(root, options.capability, options.alters.length);
 
-  // Checked the same way and for the same reason: the moment to catch a typo is while the author
+  // Resolved the same way and for the same reason: the moment to catch a typo is while the author
   // is still at the terminal. `molly status` catches the other direction, where the entry is
   // retired later and the reference is left pointing at nothing.
-  const realises =
-    options.realises === undefined ? undefined : await requireEntry(root, options.realises);
+  const realises = await resolveEntry(root, options.realises);
 
   const lang = await langFor(corpus, options.lang);
 
@@ -114,8 +115,11 @@ export async function newChangeCommand(
   // An empty `alters` is the normal answer for a change that introduces new truth, so it is
   // not remarked on by itself. What has no answer at all is a change that alters nothing *and*
   // is filed nowhere: publishing would have neither a document to write into nor a capability
-  // to file a new one under. Reported rather than refused, because either half can be decided
-  // later and neither has to be known while the bundle is being created.
+  // to file a new one under.
+  //
+  // Reported rather than refused, and it is now the *second* time the question is put — a person
+  // at a terminal was offered the capabilities above and declined, which is a real answer. This
+  // is what they get for declining, and what a scripted caller that was never asked gets too.
   if (options.alters.length === 0 && capability === undefined) {
     info(`  ${bold('nothing to publish into yet')} ${dim('— this alters nothing and is filed nowhere')}`);
     info(dim(`  add \`capability:\` for new truth, or \`alters:\` for what it changes`));
@@ -133,42 +137,107 @@ function requireKind(value: string): ChangeKind {
 }
 
 /**
- * The roadmap entry this change realises, checked against what is on disk.
+ * A scanned document, as something a person can be offered.
+ *
+ * Both areas store the title inside the record and the name outside it, so this is the one
+ * shape conversion rather than four inline copies of it.
+ */
+function offered(
+  items: readonly { readonly slug: string; readonly record: { readonly title: string } }[],
+): readonly Choice[] {
+  return items.map((item) => ({ slug: item.slug, title: item.record.title }));
+}
+
+/**
+ * The roadmap entry this change realises, resolved against what is on disk.
  *
  * An entry is a note rather than a governed unit, so this refuses a name that is not there and
  * nothing more — it does not ask whether the entry is ready, or whether anything it mentions has
  * shipped first. Ordering planned work against itself is a planning tool's job.
+ *
+ * Offered when it was not given, per `decisions/a-command-that-needs-a-choice-offers-it`: the
+ * corpus can list every entry, so a person is asked which one rather than left to discover that
+ * the flag existed. Declining is the ordinary answer — most changes realise nothing — so with
+ * nobody reading input this stays silent instead of refusing.
  */
-async function requireEntry(root: string, given: string): Promise<string> {
-  const slug = unqualify(ROADMAP, given);
+async function resolveEntry(root: string, given: string | undefined): Promise<string | undefined> {
   const { entries } = await readRoadmap(root);
-  if (entries.some((entry) => entry.slug === slug)) return slug;
+  const known = (slug: string): boolean => entries.some((entry) => entry.slug === slug);
 
-  fail(
-    `no roadmap entry named "${slug}"`,
-    entries.length === 0
-      ? `there are none — an entry is a document you write in ${ROADMAP}/`
-      : `one of: ${entries.map((e) => e.slug).join(', ')}`,
-  );
+  if (given !== undefined) {
+    const slug = unqualify(ROADMAP, given);
+    if (known(slug)) return slug;
+    return chooseFrom(offered(entries), {
+      message: 'Which does it realise?',
+      usage: `no roadmap entry named "${slug}"`,
+      empty: `there are none — an entry is a document you write in ${ROADMAP}/`,
+      problem: `no roadmap entry named "${slug}"`,
+      decline: 'none of these — it realises nothing planned',
+    });
+  }
+
+  // Nothing planned, so there is nothing to offer and nothing missing. Silence rather than a
+  // refusal: a corpus with an empty roadmap is the ordinary starting state, not a mistake.
+  if (entries.length === 0) return undefined;
+
+  return chooseFrom(offered(entries), {
+    message: 'Which roadmap entry does it realise?',
+    usage: 'molly change new "<title>" --realises <entry>',
+    empty: `there are none — an entry is a document you write in ${ROADMAP}/`,
+    decline: 'none of these — it realises nothing planned',
+  });
 }
 
 /**
- * The capability this work is filed under, checked against what is on disk.
+ * The capability this work is filed under, resolved against what is on disk.
  *
- * Refused rather than reported, because unlike `alters` there is something to check against:
- * a capability exists or it does not. The moment to catch a typo is while the author is still
- * at the terminal — `molly status` catches the other case, where the capability is deleted
- * afterwards.
+ * Refused rather than reported when it is given and wrong, because unlike `alters` there is
+ * something to check against: a capability exists or it does not. The moment to catch a typo is
+ * while the author is still at the terminal — `molly status` catches the other case, where the
+ * capability is deleted afterwards.
+ *
+ * Offered when it was not given, and this is the case the rule was written for. Filing is what
+ * decides whether the change can publish new truth at all, and the old behaviour — write the
+ * bundle, print a note, exit `0` — put that question to the author days later through
+ * `molly publish`, about a decision they had stopped thinking about.
+ *
+ * **Not asked when the change already alters something.** A change that alters existing documents
+ * publishes into them, and each already declares its own capability, so there is nothing for this
+ * one to decide. Asking anyway would be a menu with no consequence, which teaches people to
+ * dismiss menus.
  */
-async function requireCapability(root: string, given: string): Promise<string> {
-  const slug = unqualify(CAPABILITIES, given);
+async function resolveCapability(
+  root: string,
+  given: string | undefined,
+  alters: number,
+): Promise<string | undefined> {
   const { capabilities } = await readCapabilities(root);
-  if (capabilities.some((capability) => capability.slug === slug)) return slug;
+  const known = (slug: string): boolean => capabilities.some((c) => c.slug === slug);
+  const empty =
+    'there are none yet — write one first: `molly capability new "<title>"`';
+  const decline = 'none of these — file it later';
 
-  fail(
-    `no capability named "${slug}"`,
-    capabilities.length === 0
-      ? 'there are none yet — write one first: `molly capability new "<title>"`'
-      : `one of: ${capabilities.map((c) => c.slug).join(', ')}, or \`molly capability new "<title>"\``,
-  );
+  if (given !== undefined) {
+    const slug = unqualify(CAPABILITIES, given);
+    if (known(slug)) return slug;
+    return chooseFrom(offered(capabilities), {
+      message: 'Which capability?',
+      usage: `no capability named "${slug}"`,
+      empty,
+      problem: `no capability named "${slug}"`,
+      decline,
+    });
+  }
+
+  if (alters > 0) return undefined;
+  // Nothing to offer. The note printed after the write already names the remedy, and refusing
+  // here would refuse the first change in a corpus for being first.
+  if (capabilities.length === 0) return undefined;
+
+  return chooseFrom(offered(capabilities), {
+    message: 'Which capability is this filed under?',
+    usage: 'molly change new "<title>" --capability <name>',
+    empty,
+    decline,
+  });
 }

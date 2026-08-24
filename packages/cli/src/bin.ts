@@ -90,7 +90,7 @@ const FLAGS: Readonly<Record<string, readonly string[]>> = {
   move: [],
   publish: ['dry-run'],
   status: ['json'],
-  roadmap: ['name', 'capability', 'lang'],
+  roadmap: ['name', 'lang'],
   agents: ['tools', 'check'],
   version: [],
   help: [],
@@ -154,7 +154,7 @@ const HELP: readonly (readonly [string, string])[] = [
   ['molly init [--lang <tag>]', 'scaffold a corpus: every area, each explaining itself'],
   ['molly capability new "<title>"', 'a grouping: what the product is responsible for'],
   ['molly change new "<title>"', 'the four documents one change is made of'],
-  ['molly roadmap new "<title>"', 'intent that has not become a change yet'],
+  ['molly roadmap new "<title>"', 'a slice of planned work: its features, in order'],
   ['molly move [<change>] [<state>]', 'one edge of the lifecycle, forwards or back'],
   ['molly publish [<change>]', 'file its documents into the knowledge base'],
   ['molly status [--json]', 'every change, and where it is; --json for a reader that is not a person'],
@@ -233,7 +233,6 @@ async function roadmap(corpus: Corpus, args: Args): Promise<number> {
   return newRoadmapCommand(corpus, {
     title: args.positional.slice(1).join(' '),
     name: flag(args, 'name'),
-    capability: flag(args, 'capability'),
     lang: flag(args, 'lang'),
   });
 }

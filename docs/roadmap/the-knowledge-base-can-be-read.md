@@ -1,16 +1,17 @@
 ---
 title: The knowledge base can be read
 lang: en
-capability: the-corpus
 ---
 
-# What is meant to be true later
+# What this slice is for
 
 **`molly publish` fills `specs/` and `decisions/`, and no command looks at either afterwards.**
 Eight specifications and three decisions are filed, and the tool stops at the edge of the thing it
 exists to protect.
 
 Everything here is one missing piece and three payoffs on top of it.
+
+# The features, in order
 
 ## In order
 
@@ -47,7 +48,7 @@ choice**: the corpus becomes the source of truth before the viewer changes — t
 push rendered markdown into existing Confluence spaces, so governance moves first while readers
 stay where they are.
 
-# Why it is not a change yet
+## Why none of it is a change yet
 
 Step 1 is unblocked and is the largest single unlock on this roadmap. It should be shaped with 2
 and 3 in view rather than fitted to `status` alone.
@@ -57,3 +58,11 @@ whether the unit is documents or tokens. Open in 3: where reading order is decla
 happens to a document that declares none — appended, alphabetical, or reported; a default that
 quietly buries a document is the failure worth designing against. Step 4 waits on 3 and should not
 pick a viewer before there is something to view.
+
+# What has been decided
+
+Nothing beyond what the features state above.
+
+# What is done
+
+Nothing yet.

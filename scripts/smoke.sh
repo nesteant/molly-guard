@@ -415,9 +415,14 @@ check "and in the document"                0 '"name": "seven-year-archive"' -- s
 check "with the title somebody wrote"      0 "Invoices are archived after seven years" -- sh -c '
   '"$(declare -f intended)"'; intended
   node '"$BIN"' status --json'
-check "and the capability it belongs to"   0 '"capability": "billing"' -- sh -c '
+# A slice is its own axis and crosses capabilities, so the field is not read and never reported.
+# `intended` writes one carrying it on purpose: the fixture is the migration case.
+refute "a slice reports no capability"     '"capability": "billing"' -- sh -c '
   '"$(declare -f intended)"'; intended
   node '"$BIN"' status --json'
+check "and one carrying it is reported"    0 "names a capability" -- sh -c '
+  '"$(declare -f intended)"'; intended
+  node '"$BIN"' status'
 # Absent means undeclared, never null and never empty — the rule the rest of the report keeps.
 check "one filing nothing declares nothing" 0 "absent" -- sh -c '
   '"$(declare -f intended)"'; intended
@@ -1289,11 +1294,11 @@ check "and the JetBrains directory too"        0 "" -- sh -c '
 check "and the Kiro one"                       0 "" -- sh -c '
   '"$(declare -f installed)"'; installed
   test -f .kiro/skills/molly-corpus/SKILL.md'
-# The number that changes when somebody adds a directory without deciding to. Four skills into
-# each of four roots; two tools naming one root is still one root. Plus the four commands each
+# The number that changes when somebody adds a directory without deciding to. Five skills into
+# each of four roots; two tools naming one root is still one root. Plus the five commands each
 # of the three real tools takes — the shared root is a directory rather than a palette, so it
-# has none, and a count that ever equals 32 is a command file written where nothing types.
-check "four skills into each of four roots"    0 "28 file(s) written" -- sh -c '
+# has none, and a count that ever equals 40 is a command file written where nothing types.
+check "five skills into each of four roots"    0 "35 file(s) written" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents'
 check "and names the grants to add"            0 "Bash(molly:*)" -- sh -c '
   '"$(declare -f installed)"'; installed
@@ -1323,7 +1328,7 @@ check "and the rest is not written"            1 "" -- sh -c '
 check "a tool can be named instead"            0 "" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents --tools cursor >/dev/null
   test -f .agents/skills/molly-corpus/SKILL.md'
-check "and two that share a root write once"   0 "8 file(s) written" -- sh -c '
+check "and two that share a root write once"   0 "10 file(s) written" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents --tools codex,cursor'
 check "and the run says who else reads it"     0 "read by OpenAI Codex, Cursor" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents --tools cursor'
@@ -1340,7 +1345,7 @@ check "and only there"                         1 "" -- sh -c '
 check "a tool the shared root already served" 0 "" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents --tools goose >/dev/null
   test -f .agents/skills/molly-corpus/SKILL.md'
-check "and two of them write it once"          0 "4 file(s) written" -- sh -c '
+check "and two of them write it once"          0 "5 file(s) written" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents --tools roo,openhands'
 # Junie and Kiro are the rows somebody tidying the table would fold into the majority, exactly
 # as Cline is the row somebody would fold the other way. An absence is what catches that.
@@ -1611,12 +1616,12 @@ check "and paths that exist in a corpus"       0 "ok" -- sh -c '
 
 check "the skill stays short"                  0 "ok" -- sh -c '
   '"$(declare -f skill)"'; skill | wc -l | awk "{print (\$1 <= 60) ? \"ok\" : \"skill is \" \$1 \" lines\"}"'
-# The three workflow skills are procedures, not a second copy of the reference one. A cap each,
-# because four skills load their name and description into every session that starts.
+# The four workflow skills are procedures, not a second copy of the reference one. A cap each,
+# because five skills load their name and description into every session that starts.
 check "and the workflow skills shorter still" 0 "ok" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' agents --tools agents >/dev/null
   long=""
-  for file in .agents/skills/molly-new .agents/skills/molly-advance .agents/skills/molly-publish; do
+  for file in .agents/skills/molly-new .agents/skills/molly-advance .agents/skills/molly-publish .agents/skills/molly-roadmap; do
     lines="$(wc -l < "$file/SKILL.md")"
     [ "$lines" -le 30 ] || long="$long [$file $lines lines]"
   done
@@ -1852,7 +1857,9 @@ check "and it is numbered where the corpus asks" 0 "roadmap/0001-a-thought" -- s
   cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
   printf "root: docs\nlang: en\nnaming:\n  roadmap: \"{ordinal:4}-{slug}\"\n" > mollyguard.yml
   node '"$BIN"' roadmap new "A thought"'
-check "a capability it does not have is refused" 1 "no capability named" -- sh -c '
+# A slice crosses capabilities, so the flag is gone rather than validated — and it is refused by
+# name, because a flag that is silently ignored is one the caller believes was applied.
+check "a capability is not a slice's to name" 1 "does not take --capability" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
   node '"$BIN"' roadmap new "A thought" --capability ghost'
 check "a duplicate entry is refused"       1 "already exists" -- sh -c '
@@ -1865,7 +1872,7 @@ check "a change may name what it realises" 0 '"realises": "seven-year-archive"' 
 check "an entry that is not there is refused" 1 "no roadmap entry named" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
   node '"$BIN"' change new "X" --realises nothing-here'
-check "a realised entry is reported"       0 "realised by changes/archive" -- sh -c '
+check "a slice with published work is reported" 0 "has published: changes/archive" -- sh -c '
   '"$(declare -f planned)"'; planned
   node '"$BIN"' publish archive >/dev/null
   node '"$BIN"' status'
@@ -1879,7 +1886,7 @@ check "retiring it quietens the report"    0 "ok" -- sh -c '
   '"$(declare -f planned)"'; planned
   node '"$BIN"' publish archive >/dev/null
   rm docs/roadmap/seven-year-archive.md
-  node '"$BIN"' status | grep -q "realised by" && echo "still reported" || echo ok'
+  node '"$BIN"' status | grep -q "has published" && echo "still reported" || echo ok'
 # Only while in flight. An archived change pointing at a retired entry is the finished shape of
 # this link, and reporting it would turn every correct publication into a finding.
 refute "a published change is not asked again" "realise a roadmap entry that is not there" -- sh -c '
@@ -1982,6 +1989,108 @@ check "and agents writes only its own"      0 "nothing foreign" -- sh -c '
   if [ "$total" -lt 28 ]; then echo "agents wrote only $total file(s)"
   elif [ -n "$foreign" ]; then echo "foreign: $foreign"
   else echo "nothing foreign"; fi'
+
+printf '\n%s\n' "$(dim 'a command that needs a choice offers it')"
+
+# decisions/a-command-that-needs-a-choice-offers-it. The suite runs with no TTY, which makes the
+# refusal half free to assert and the interactive half impossible — so what is asserted here is
+# that nothing waits, nothing is written when nothing was chosen, and every existing scripted
+# caller behaves exactly as it did. The prompt itself is checked by hand and recorded in the
+# change's tests.md.
+chooser() {
+  cd "$(mktemp -d)" || exit 2
+  node "$BIN" init >/dev/null
+  node "$BIN" capability new "Billing" --name billing >/dev/null
+  node "$BIN" roadmap new "A plan" --name a-plan >/dev/null
+}
+# The rule's first bound: nothing reading input is a refusal, never a wait. Under a timeout,
+# because the failure this change could introduce is a prompt in a pipeline, and a suite that
+# hangs reports nothing at all.
+check "nothing waits for input"            1 "no capability named" -- sh -c '
+  '"$(declare -f chooser)"'; chooser
+  ( node '"$BIN"' change new "A" --capability ghost & pid=$!; ( sleep 10; kill -9 $pid 2>/dev/null ) & wait $pid )'
+check "and it names what could be chosen"  1 "billing" -- sh -c '
+  '"$(declare -f chooser)"'; chooser
+  node '"$BIN"' change new "A" --capability ghost'
+check "the same for what it realises"      1 "a-plan" -- sh -c '
+  '"$(declare -f chooser)"'; chooser
+  node '"$BIN"' change new "A" --realises ghost'
+# An optional value nobody was asked about is not an answer that was got wrong. Every scripted
+# caller that never passed --capability keeps working, and the note is still what it gets.
+check "an unasked question is not refused" 0 "nothing to publish into yet" -- sh -c '
+  '"$(declare -f chooser)"'; chooser
+  node '"$BIN"' change new "A"'
+# The refusal fires before anything is written, so walking away leaves no half-made bundle.
+check "and a refusal writes nothing"       0 "only the readme" -- sh -c '
+  '"$(declare -f chooser)"'; chooser
+  node '"$BIN"' change new "A" --capability ghost >/dev/null 2>&1
+  ls docs/changes | grep -qv README.md && echo "a bundle was left" || echo "only the readme"'
+# Never an empty menu: a list of nothing is a question with no answer, so the refusal names the
+# command that writes the first one instead.
+check "an empty set names the remedy"      1 "molly capability new" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' change new "A" --capability ghost'
+# And an empty roadmap is the ordinary starting state rather than a mistake, so creating a change
+# in one is silent about it — there is nothing to offer and nothing missing.
+refute "an empty roadmap is not remarked on" "roadmap" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' change new "A" --capability ghost 2>&1 || true'
+# Ask, or refuse with the list, is written once. A second copy is what review is looking for.
+check "one implementation, not one per command" 0 "ok" -- sh -c '
+  cd '"$ROOT"'
+  count=$(grep -c "nothing is reading input" packages/cli/src/*.ts | grep -v ":0$" | wc -l)
+  [ "$count" -eq 1 ] && echo ok || { grep -n "nothing is reading input" packages/cli/src/*.ts; exit 1; }'
+
+printf '\n%s\n' "$(dim 'a roadmap is a slice of planned work')"
+
+# The template is half of an agreement the tool cannot otherwise hold: it writes the shape and the
+# molly-roadmap skill reads it, and nothing checks the two against each other. So the headings are
+# asserted on the file — if they move, this is what says the skill has gone stale.
+check "a slice is born in the shape"       0 "ok" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' roadmap new "Billing overhaul" >/dev/null
+  missing=""
+  for heading in "What this slice is for" "The features, in order" "What has been decided" "What is done"; do
+    grep -qF "$heading" docs/roadmap/billing-overhaul.md || missing="$missing [$heading]"
+  done
+  [ -z "$missing" ] || { printf "%s\n" "$missing"; exit 1; }
+  echo ok'
+# A fifth skill that reached three roots of four is a failure rather than a surprise.
+check "the skill reaches every root"       0 "ok" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents >/dev/null
+  missing=""
+  for root in $(find . -type d -name molly-corpus | sed "s|/molly-corpus$||"); do
+    [ -d "$root/molly-roadmap" ] || missing="$missing [$root]"
+  done
+  [ -z "$missing" ] || { printf "%s\n" "$missing"; exit 1; }
+  echo ok'
+# And it says the thing it exists to say. A skill that loads and does not teach the ordering rule
+# is the failure this change is a fix for, one level up.
+check "and it says the order is prose"     0 "order:" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents --tools agents >/dev/null
+  cat .agents/skills/molly-roadmap/SKILL.md'
+check "and that a slice crosses capabilities" 0 "crosses them" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents --tools agents >/dev/null
+  cat .agents/skills/molly-roadmap/SKILL.md'
+# The drafting skill points at the plan rather than restating it — one more pointer of the kind
+# the scaffold already makes, and never a copy.
+check "the drafting skill points at it"    0 "molly-roadmap" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' agents --tools agents >/dev/null
+  cat .agents/skills/molly-new/SKILL.md'
+# Several changes realise one slice over its life, so the finding names them all. The
+# single-change wording was a bug the moment a slice held more than one feature.
+check "a slice names every change against it" 0 "changes/first, changes/second" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' capability new "Billing" --name billing >/dev/null
+  node '"$BIN"' roadmap new "Overhaul" --name overhaul >/dev/null
+  for name in first second; do
+    node '"$BIN"' change new "$name" --name "$name" --capability billing --realises overhaul >/dev/null
+    mkdir -p "docs/changes/$name/publish/specs/$name"
+    printf -- "---\ntitle: $name\nlang: en\ncapability: billing\n---\n\nBody.\n" > "docs/changes/$name/publish/specs/$name/spec.md"
+    node '"$BIN"' publish "$name" >/dev/null
+  done
+  node '"$BIN"' status'
+
 
 printf '\n'
 if [[ $FAIL -eq 0 ]]; then

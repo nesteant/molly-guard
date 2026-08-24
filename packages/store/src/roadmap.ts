@@ -62,7 +62,7 @@ export async function writeRoadmapEntry(
   // No `state`. An entry is open, or it is answered by a change that landed, and neither is
   // recorded — a document carrying the field would invite something to try moving it.
   const text = serializeDocument(
-    { title: record.title, lang: record.lang, capability: record.capability },
+    { title: record.title, lang: record.lang },
     templates.bodyFor('roadmap'),
   );
 
@@ -110,6 +110,15 @@ export async function readRoadmap(root: string): Promise<RoadmapScan> {
       continue;
     }
 
+    // A slice is its own axis and is expected to cross capabilities, so a field naming one is a
+    // claim the corpus cannot hold. Reported and not refused, like everything about this area:
+    // it is somebody's planning note, and the entry is still listed and still resolvable.
+    if (typeof document.fields['capability'] === 'string') {
+      unreadable.push(
+        `${ROADMAP}/${entry.name} names a capability — a slice crosses them, so the field says nothing`,
+      );
+    }
+
     entries.push({
       slug,
       node: qualify(ROADMAP, slug),
@@ -130,11 +139,9 @@ export async function readRoadmap(root: string): Promise<RoadmapScan> {
 function recordFrom(fields: Readonly<Record<string, unknown>>, slug: string): RoadmapRecord {
   const title = fields['title'];
   const lang = fields['lang'];
-  const capability = fields['capability'];
 
   return {
     title: typeof title === 'string' && title.trim() !== '' ? title : slug,
     lang: typeof lang === 'string' ? lang : '',
-    capability: typeof capability === 'string' && capability.trim() !== '' ? capability : undefined,
   };
 }

@@ -1,13 +1,14 @@
 ---
 title: A name can change without losing what points at it
 lang: en
-capability: the-corpus
 ---
 
-# What is meant to be true later
+# What this slice is for
 
 **A document can be renamed, and every reference to it keeps resolving — including one sealed
 inside an archived bundle.**
+
+# The features, in order
 
 ## In order
 
@@ -67,7 +68,7 @@ rather than extended.
 | the verdict ledger | node plus content hash | planned |
 | a roadmap entry | what realised it | planned |
 
-# Why it is not a change yet
+## Why none of it is a change yet
 
 Step 1 is unblocked and worth doing on its own — possibly *instead* of step 2 for now, because
 `mv` will always be available, so the orphan case has to be visible rather than prevented.
@@ -78,7 +79,7 @@ reference, or are references left to age visibly. **Renaming a capability** move
 `capability:` pointing at it at once, and is the rename most likely to be wanted, because
 capability boundaries are the least stable thing in a corpus.
 
-# Deliberately not doing
+# What has been decided
 
 **An explicit `id:` in frontmatter.** It makes identity a field that can disagree with the path,
 moves uniqueness from the filesystem into a check we would own, and stops a ledger entry from
@@ -87,3 +88,7 @@ pointing at anything resolvable without scanning every document.
 **A tracker number as identity.** A change with no ticket then has no identity, two changes for one
 ticket collide, and a tracker migration dangles every reference. The ticket is a *reference* — see
 `a-capability-can-retire-and-a-concern-can-cross-one`.
+
+# What is done
+
+Nothing yet.

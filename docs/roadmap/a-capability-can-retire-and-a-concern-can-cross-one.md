@@ -1,13 +1,14 @@
 ---
 title: A capability can retire, and a concern can cross one
 lang: en
-capability: the-corpus
 ---
 
-# What is meant to be true later
+# What this slice is for
 
 **A capability boundary can be moved without breaking what was filed before it moved, and a concern
 that genuinely crosses boundaries has somewhere to live that is not a second capability.**
+
+# The features, in order
 
 ## 1. Deprecation
 
@@ -44,7 +45,7 @@ what the change *creates*, because anything it alters already declares its own.
 is a reference, not an identity, so the field can hold several and a change with no ticket is not
 thereby nameless.
 
-# Why it is not a change yet
+## Why none of it is a change yet
 
 With two capabilities and eight specifications there is nothing to redirect, and a refusal nobody
 can trigger is a refusal nobody has tested. The field's shape is settled above so it can be added
@@ -54,9 +55,13 @@ Both fields in 2 are cheap and blocked by nothing except want: a field nothing r
 the first reader assumes. They arrive alongside the cross-cutting read, most likely with
 `the-knowledge-base-can-be-read`, where the contrast between a slice and a gather becomes visible.
 
-# Also deliberately not written
+# What has been decided
 
 **A capability nothing is filed under is not reported.** On the day it is made that is every
 capability, so reporting it would be reporting the normal case. It becomes a reasonable finding once
 a corpus is old enough that an empty grouping means a boundary nobody uses — a judgement about size,
 and the tool does not know the size yet.
+
+# What is done
+
+Nothing yet.

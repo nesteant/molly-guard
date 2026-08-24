@@ -1,13 +1,14 @@
 ---
 title: The ledger's role is settled, and it stays bounded
 lang: en
-capability: the-change-flow
 ---
 
-# What is meant to be true later
+# What this slice is for
 
 **The ledger has a justification nothing else in the repository already provides, written down —
 and it stops growing with the age of the corpus.**
+
+# The features, in order
 
 ## 1. Settle what it is for
 
@@ -59,7 +60,7 @@ the bundle at no cost. **This is `molly publish`'s job** — it already fills `h
 the bundle; moving the events is the part not built, and adding it to the command that owns the
 archive is cheaper than retrofitting a sweep.
 
-# Why it is not a change yet
+## Why none of it is a change yet
 
 Step 2 assumes step 1 answers *keep it*. If `by` and `at` go, the partitioning changes shape, and
 building it first means designing the archive around fields about to be removed.
@@ -73,7 +74,7 @@ authoritative. What breaks is the direction of a move, the created-versus-transi
 and the "the ledger has never heard of this bundle" signal. That is a thin list, and pretending
 otherwise would be the half-answer this tool exists to catch.
 
-# Rejected, so it is not re-proposed
+# What has been decided
 
 **Parquet, or SQLite.** The ledger's value is that it is readable in a pull-request diff and
 mergeable by git. A binary columnar format is neither, needs a dependency, and optimises analytical
@@ -85,3 +86,7 @@ ledger means removing a change leaves a trail.
 
 **Sharding by time.** Bounds file size but not read cost: folding one change still means reading
 every shard, so it trades a size problem for an index problem.
+
+# What is done
+
+Nothing yet.

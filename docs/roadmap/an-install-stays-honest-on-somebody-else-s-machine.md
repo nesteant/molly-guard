@@ -1,13 +1,14 @@
 ---
 title: An install stays honest on somebody else's machine
 lang: en
-capability: the-corpus
 ---
 
-# What is meant to be true later
+# What this slice is for
 
 **What `molly` writes outside its corpus is current, complete and correct — and can say so.**
 Everything here is invisible in this repository and paid for entirely by everybody else.
+
+# The features, in order
 
 ## In rough order of what it costs to be wrong
 
@@ -58,9 +59,17 @@ on, that everything written outside the corpus is regenerable byte-for-byte, whi
 `--check` mean anything. Reopened by somebody running a corpus in a language they cannot instruct
 an agent in, not by somebody tidying.
 
-# Why it is not a change yet
+## Why none of it is a change yet
 
 1 and 2 are unblocked and small; 2 needs its blast radius agreed before the code, which is most of
 the work. 3 is not a design problem at all — each row is independent and verifiable in minutes, and
 worth nothing until somebody uses that tool, since writing rows nobody reads is how the wrong ones
 got into circulation. 4 has two bad answers and no forcing case.
+
+# What has been decided
+
+Nothing beyond what the features state above.
+
+# What is done
+
+Nothing yet.

@@ -41,6 +41,21 @@ When it is genuinely unclear, it is a change. The cost of one bundle nobody need
 documents; the cost of a behaviour nothing specified is a tool whose specification is wrong and
 says nothing about being wrong.
 
+## Adding a command
+
+`decisions/a-command-that-needs-a-choice-offers-it` binds this and is the one most easily missed,
+because the wrong version looks finished: a command that needs a value the corpus can enumerate
+**offers the list to a person and refuses with the list to a pipeline**. A refusal that names what
+could have been chosen is one round trip short of the job when somebody is sitting at a terminal.
+
+The bounds are part of the rule, not exceptions to it — never wait when nothing is reading input,
+never show an empty menu, let an optional value be declined, and ask before anything is written.
+Reach for `chooseFrom` in `pick.ts`; a second copy of *ask, or refuse with the list* is what review
+is looking for.
+
+Every command is listed in `molly help` and the harness checks that listing is complete, so adding
+one is visible — which is the moment this is meant to be read.
+
 ## The specification is read before the code is changed
 
 Before altering a command, read the specification that governs it — `molly status` lists the
@@ -56,14 +71,22 @@ this tool was never given.
 
 ## Intent lives in `docs/roadmap/`, never in a file at the root
 
-`molly roadmap new "<title>" --capability <name>` writes an entry; `molly status` lists what is
-there. A `ROADMAP.md` at the repository root existed once and was migrated into the area — a plan
-outside the corpus is a record nothing manages, which is the half-governed state this tool exists
-to prevent.
+`molly roadmap new "<title>"` writes a **slice** — a body of planned work holding what it is for,
+its features in the order they are wanted, what has been decided, and what is done. `molly status`
+lists the slices. A `ROADMAP.md` at the repository root existed once and was migrated into the
+area: a plan outside the corpus is a record nothing manages, which is the half-governed state this
+tool exists to prevent.
 
-A change that implements an entry names it with `--realises <entry>`, so publishing the change
-makes `molly status` say the entry is still planning something that already exists. Retiring it is
-a person's job; the tool does not delete somebody's prose.
+**Read the slice before drafting.** The order is prose and nothing parses it — the `molly-roadmap`
+skill is how to act on one, and it carries the prohibitions that matter: never invent a feature the
+slice does not name, never reorder or reprioritise unasked, never mark a feature done that has not
+published.
+
+A change that implements a feature names its slice with `--realises <slice>`, and the title comes
+from the *feature* rather than the slice — one named after a body of work makes several claims.
+Several changes realise one slice over its life; `molly status` names them and asks whether the
+plan is still current. Keeping *what is done* true is a direct edit, because no change alters a
+slice.
 
 ## The corpus reads and writes in `en`
 

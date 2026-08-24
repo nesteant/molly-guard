@@ -53,7 +53,7 @@ import {
   writeDeclaredState,
 } from '@mollyguard/store';
 import { identity } from './identity';
-import { abandoned, chooseChange, interactive, pickState } from './pick';
+import { chooseChange, chooseFrom } from './pick';
 import { amber, dim, fail, green, info, teal, warn } from './ui';
 
 export interface MoveOptions {
@@ -178,22 +178,25 @@ async function chooseState(
   slug: string,
 ): Promise<string> {
   if (offered.length === 0) {
-    // Only reachable once a slice has filtered everything away. Saying so beats presenting an
-    // empty list and leaving the reader to wonder what they typed wrong.
+    // Only reachable once a slice has filtered everything away. Distinguished from the empty
+    // sets `chooseFrom` handles: those mean nothing has been written yet, this means something
+    // was written and then narrowed away, and the remedy is not the same.
     fail(`nothing is offered from ${from} for ${slug}`, 'an installed slice has narrowed the list to nothing');
   }
-  if (!interactive()) {
-    fail(
-      `molly move ${slug} <state>`,
-      `nothing is reading input, so there is nobody to ask. From ${from}: ${offered
-        .map((choice) => choice.to)
-        .join(', ')}`,
-    );
-  }
-  try {
-    return await pickState(from, offered);
-  } catch (cause) {
-    if (abandoned(cause)) process.exit(1);
-    throw cause;
-  }
+  // Through the shared offer, per `decisions/a-command-that-needs-a-choice-offers-it`: the set
+  // comes from the lifecycle rather than from a scan, and that changes where the list is built,
+  // not how it is put to somebody. `direction` is the whole description a state needs — the move
+  // that undoes work is worth naming at the moment of choosing.
+  const chosen = await chooseFrom(
+    offered.map((choice) => ({
+      slug: choice.to,
+      title: choice.direction === 'advances' ? 'advances' : 'goes back',
+    })),
+    {
+      message: `Move it from ${from} to?`,
+      usage: `molly move ${slug} <state>`,
+      empty: 'an installed slice has narrowed the list to nothing',
+    },
+  );
+  return chosen as string;
 }

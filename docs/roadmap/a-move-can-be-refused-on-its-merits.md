@@ -1,12 +1,13 @@
 ---
 title: A move can be refused on its merits
 lang: en
-capability: the-change-flow
 ---
 
-# What is meant to be true later
+# What this slice is for
 
 **The flow can say no for a reason, and the reason is somebody else's to write.**
+
+# The features, in order
 
 ## 1. The hook seam
 
@@ -41,7 +42,7 @@ the correction is meant to be a new change rather than a retreat. The two candid
 **refusal** that names the correction as a new change, or a **recorded reversal** that unwinds the
 write and says so in the ledger. The second is more honest and more work.
 
-# Why it is not a change yet
+## Why none of it is a change yet
 
 The seam is the design, and it is worth having something that reads the corpus before it is drawn —
 a subscriber that cannot see `specs/` can only refuse on the argument, which is what `move` already
@@ -53,3 +54,11 @@ holds that a refusal does not.
 **Neither answer in 2 should be built before somebody actually wants to undo a publication.** A
 reversal designed against an imagined case is a second write path through the archive, and the
 archive's whole value is that nothing writes to it twice.
+
+# What has been decided
+
+Nothing beyond what the features state above.
+
+# What is done
+
+Nothing yet.

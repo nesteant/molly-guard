@@ -119,7 +119,6 @@ export interface Report {
   readonly roadmap: readonly {
     readonly name: string;
     readonly title: string;
-    readonly capability: string | undefined;
   }[];
   readonly changes: readonly ReportedChange[];
   readonly findings: readonly Finding[];
@@ -280,22 +279,29 @@ async function gather(root: string, dir: string): Promise<Report> {
 
   // The plan and the corpus, asked whether they still agree.
   //
-  // A change publishes and its roadmap entry survives, so the plan goes on planning something
-  // that already exists — the failure that made a repository maintain a second model of its own
-  // work by hand. Nothing here retires the entry: it is somebody's planning note, the tool does
-  // not write prose, and deleting a document because a reference somewhere else changed state is
-  // exactly the unasked-for write this whole product is a cover over. It is said, every time
-  // `status` runs, until somebody retires it.
+  // What the plan and the knowledge base can be asked, and what they can never be asked.
   //
-  // Reported and not failing, for the reason every roadmap finding is: an entry is a note rather
-  // than a governed unit, and failing a build over a planning document nobody retired would be
-  // refusing somebody's notes for existing.
+  // A slice holds several features and outlives the first change that publishes against it, so
+  // "this was realised — retire it" is the wrong sentence: it tells somebody to delete a plan
+  // with four features left in it. What the tool can say is which changes have published
+  // against the slice; whether that finishes it is prose, and prose is not read here.
+  //
+  // Nothing retires the slice either way. It is somebody's planning note, the tool does not
+  // write prose, and deleting a document because a reference elsewhere changed state is exactly
+  // the unasked-for write this whole product is a cover over. It is said, every time `status`
+  // runs, until somebody says otherwise in the document.
+  //
+  // Reported and not failing, for the reason every roadmap finding is: a slice is a note rather
+  // than a governed unit, and failing a build over a planning document would refuse somebody's
+  // notes for existing.
   for (const entry of intended.entries) {
-    const by = changes.find((change) => change.archived && change.realises === entry.slug);
-    if (by === undefined) continue;
+    const by = changes.filter((change) => change.archived && change.realises === entry.slug);
+    if (by.length === 0) continue;
     findings.push({
       kind: 'realised-roadmap',
-      message: `${ROADMAP}/${entry.slug} was realised by ${by.node}, which has published — retire it`,
+      message: `${ROADMAP}/${entry.slug} has published: ${by
+        .map((change) => change.node)
+        .join(', ')} — is the plan still current?`,
       fails: false,
     });
   }
@@ -304,11 +310,7 @@ async function gather(root: string, dir: string): Promise<Report> {
     corpus: dir,
     ok: !findings.some((finding) => finding.fails),
     capabilities: grouping.capabilities.map((c) => ({ name: c.slug, title: c.record.title })),
-    roadmap: intended.entries.map((e) => ({
-      name: e.slug,
-      title: e.record.title,
-      capability: e.record.capability,
-    })),
+    roadmap: intended.entries.map((e) => ({ name: e.slug, title: e.record.title })),
     changes,
     findings,
   };
@@ -432,7 +434,7 @@ function render(report: Report, dir: string): void {
   // entry is somebody's planning note, and the tool reports rather than retires it.
   const realised = listing('realised-roadmap');
   if (realised.length > 0) {
-    info(`  ${dim(`${realised.length} roadmap entry(s) have been realised and are still here`)}`);
+    info(`  ${dim(`${realised.length} roadmap slice(s) have changes published against them`)}`);
     for (const finding of realised) info(`    ${dim(finding.message)}`);
     info();
   }
