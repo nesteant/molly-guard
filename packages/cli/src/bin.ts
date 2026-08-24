@@ -132,7 +132,7 @@ const COMMANDS: Readonly<Record<string, Command>> = {
   },
   move: {
     usage: 'molly move [<change>] [<state>]',
-    summary: 'one edge of the lifecycle, forwards or back',
+    summary: 'one edge of the lifecycle or several, forwards or back',
     flags: [],
     refuses: [
       'a state that is not one of the eight',

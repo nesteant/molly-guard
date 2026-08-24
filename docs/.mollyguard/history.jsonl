@@ -157,3 +157,9 @@
 {"node":"changes/0020-a-command-s-help-is-about-the-command-it-was-asked-of","at":"2026-08-24T18:32:55.111Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0020-a-command-s-help-is-about-the-command-it-was-asked-of","at":"2026-08-24T18:32:55.205Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0020-a-command-s-help-is-about-the-command-it-was-asked-of","at":"2026-08-24T18:33:32.457Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0021-a-move-that-crosses-several-states-names-them","at":"2026-08-24T18:34:17.385Z","kind":"transition","from":"draft","to":"review","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0021-a-move-that-crosses-several-states-names-them","at":"2026-08-24T18:34:17.486Z","kind":"transition","from":"review","to":"approved","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0021-a-move-that-crosses-several-states-names-them","at":"2026-08-24T18:34:17.576Z","kind":"transition","from":"approved","to":"in_progress","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0021-a-move-that-crosses-several-states-names-them","at":"2026-08-24T18:37:19.862Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0021-a-move-that-crosses-several-states-names-them","at":"2026-08-24T18:37:19.975Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0021-a-move-that-crosses-several-states-names-them","at":"2026-08-24T18:37:20.096Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}

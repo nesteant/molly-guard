@@ -35,6 +35,7 @@
 import {
   CHANGES,
   MoveChoice,
+  between,
   STATES,
   StateChoice,
   TERMINAL,
@@ -152,7 +153,14 @@ export async function moveCommand(corpus: Corpus, options: MoveOptions): Promise
 
   // No edge is refused. The sequence says which way this went; whether it should have been
   // allowed is a question for a slice or an orchestrator, and neither exists yet.
+  //
+  // **What is not refused is still said.** A one-edge move and a six-edge move differed in the
+  // output by a single word, so `molly move 0003 deployed` typed where `review` was meant read
+  // exactly like a deliberate jump — at the one moment it was still free to correct. The
+  // distance is arithmetic over a sequence this tool owns, and what the tool knows and does not
+  // show is the same failure as what it overwrites and does not say.
   const direction = directionOf(from, to);
+  const skipped = between(from, to);
   const by = identity();
   await appendEvent(root, { node: named.node, at: options.at, kind: 'transition', from, to, by });
 
@@ -161,6 +169,10 @@ export async function moveCommand(corpus: Corpus, options: MoveOptions): Promise
   const problem = await writeDeclaredState(root, named.slug, to);
 
   info(`${green('→')} ${teal(named.node)} ${from} → ${to} ${dim(`(${direction}, ${by})`)}`);
+  // A second line rather than a longer one, and only when there is something to say. Six state
+  // names inside the parenthetical would push the author's name off the end of a terminal, and
+  // the common case has to stay exactly as short as it was.
+  if (skipped.length > 0) info(`  ${dim(`skipped ${skipped.join(', ')}`)}`);
   if (problem !== undefined) {
     warn(`${amber('!')} ${dim(`recorded, but the document still says ${from}: ${problem}`)}`);
     return 1;

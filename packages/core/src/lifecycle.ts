@@ -82,6 +82,28 @@ export function directionOf(from: State, to: State): Direction {
   return difference === 0 ? 'stays' : difference > 0 ? 'advances' : 'returns';
 }
 
+/**
+ * The states a move passes over, in the direction it travels.
+ *
+ * Empty for an adjacent move and for one that stays, which is what makes it safe to render
+ * unconditionally: the common case contributes nothing and the line is unchanged.
+ *
+ * **Passed over, never performed.** These are the states a change did not stop in, and naming
+ * them is a rendering rather than a record — the ledger gets the one transition it was told
+ * about. A tool that wrote a line per state here would be manufacturing an audit trail, which
+ * is the failure the ledger exists to prevent rather than a convenience it is missing.
+ *
+ * Reversed for a move that goes back, so the order reads the way the move went rather than the
+ * way the sequence is written. Somebody reading `deployed → review` is walking backwards, and a
+ * list in forward order would describe a journey nobody took.
+ */
+export function between(from: State, to: State): readonly State[] {
+  const here = positionOf(from);
+  const there = positionOf(to);
+  const span = STATES.slice(Math.min(here, there) + 1, Math.max(here, there));
+  return here < there ? span : [...span].reverse();
+}
+
 /** One recorded event. Written to the ledger by the store, folded back by `stateOf`. */
 export interface LifecycleEvent {
   /** Qualified id of what this happened to: `changes/<name>`. */

@@ -13,6 +13,8 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BIN="$ROOT/packages/cli/dist/bin.js"
 export BIN   # shared with the helper functions injected into `sh -c` blocks
+CORE="$ROOT/packages/core/dist/index.js"
+export CORE  # the pure half, asserted directly where a CLI round trip would prove less
 WORK="$(mktemp -d)"
 KEEP=0
 [[ "${1:-}" == "--keep" ]] && KEEP=1
@@ -2348,6 +2350,50 @@ check "publish still refuses at the write"  1 "would be filed under no capabilit
   printf -- "---\ntitle: X\nlang: en\n---\n\nB.\n" > docs/changes/one/publish/specs/x/spec.md
   node '"$BIN"' publish one'
 
+
+# ------------------------------------------------ a move that crosses several states names them
+#
+# The lifecycle permits any transition on purpose — policy belongs to a slice, not to the engine.
+# What is not refused is still said: a one-edge move and a six-edge move differed in the output by
+# a single word, so a typo landing a change five states further than intended read exactly like a
+# deliberate jump.
+printf '\n%s\n' "$(dim 'a move that crosses several states')"
+
+moved() { cd "$(mktemp -d)" || exit 2; node "$BIN" init >/dev/null 2>&1; node "$BIN" change new "A" --name a >/dev/null 2>&1; }
+
+check "a six-edge advance names what it passed" 0 "skipped review, approved, in_progress, implemented, verified" -- sh -c '
+  '"$(declare -f moved)"'; moved; node "$BIN" move a deployed'
+check "and records one transition, not six"     0 "1" -- sh -c '
+  '"$(declare -f moved)"'; moved; node "$BIN" move a deployed >/dev/null
+  grep -c transition docs/.mollyguard/history.jsonl | tr -d " "'
+check "a return names them the way it went"     0 "skipped verified, implemented, in_progress, approved" -- sh -c '
+  '"$(declare -f moved)"'; moved; node "$BIN" move a deployed >/dev/null; node "$BIN" move a review'
+refute "an adjacent move says nothing of a skip" "skipped" -- sh -c '
+  '"$(declare -f moved)"'; moved; node "$BIN" move a review'
+refute "and neither does one that stays"         "skipped" -- sh -c '
+  '"$(declare -f moved)"'; moved; node "$BIN" move a review >/dev/null; node "$BIN" move a review'
+check "a skip is reported, never refused"        0 "advances" -- sh -c '
+  '"$(declare -f moved)"'; moved; node "$BIN" move a deployed'
+
+# Arithmetic over the sequence, asserted where it lives. Every ordered pair including the equal
+# ones and the terminal state — a table is cheaper than provoking sixty-four cases through a CLI.
+check "between is total over every ordered pair" 0 "ok" -- sh -c '
+  node -e '"'"'
+    const { STATES, between, positionOf } = require(process.env.CORE);
+    for (const from of STATES) for (const to of STATES) {
+      const got = between(from, to);
+      const here = positionOf(from), there = positionOf(to);
+      const want = STATES.slice(Math.min(here, there) + 1, Math.max(here, there));
+      const expect = here < there ? want : [...want].reverse();
+      if (JSON.stringify(got) !== JSON.stringify(expect)) {
+        console.log(`${from} -> ${to}: ${got} != ${expect}`); process.exit(1);
+      }
+      if (Math.abs(there - here) < 2 && got.length !== 0) {
+        console.log(`${from} -> ${to} should be empty`); process.exit(1);
+      }
+    }
+    console.log("ok");
+  '"'"''
 
 # ------------------------------------------- the refusals a command names in its help still fire
 #

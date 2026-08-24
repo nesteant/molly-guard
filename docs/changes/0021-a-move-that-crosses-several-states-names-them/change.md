@@ -3,7 +3,7 @@ title: A move that crosses several states names them
 lang: en
 kind: feature
 capability: the-change-flow
-state: draft
+state: deployed
 alters:
   - specs/the-state-of-a-change
   - specs/what-a-command-may-never-do-silently
@@ -15,9 +15,14 @@ alters:
 prints:
 
 ```
-→ changes/0003-run-in-a-deployed-environment draft → deployed
-  (advances, skipping review, approved, in_progress, implemented, verified)
+→ changes/0003-run-in-a-deployed-environment draft → deployed (advances, ana)
+  skipped review, approved, in_progress, implemented, verified
 ```
+
+A second line rather than a longer one. Six state names inside the parenthetical push the
+author's name off the end of a terminal, and the line a one-edge move prints has to stay exactly
+as short as it was — a clause that fired when nothing was skipped would train people to read past
+it.
 
 **Nothing is refused and no event is invented.** One transition was asked for, one is recorded, and
 the states named were passed rather than performed. A move that returns across several states is
