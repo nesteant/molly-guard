@@ -47,8 +47,9 @@ archives the bundle and records it. **The tool composes no text** — every publ
 was written by a person, or by an agent acting as one, and what the tool guarantees is that
 nothing arrives unverified and unrecorded.
 
-Intent that has not become a change yet is in [ROADMAP.md](ROADMAP.md), also outside `docs/`
-and also temporary — those entries move into `docs/roadmap/` once a command manages them.
+Intent that has not become a change yet is in `docs/roadmap/`, written by `molly roadmap new`
+and listed by `molly status`. There is no roadmap file outside the corpus: one would be a record
+nothing manages, which is the half-governed state this tool exists to prevent.
 
 ## Working on the tool
 
