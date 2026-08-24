@@ -18,6 +18,7 @@
  */
 
 import {
+  AREAS,
   CHANGES,
   CHANGE_KINDS,
   ROADMAP,
@@ -37,6 +38,7 @@ import {
   readHistory,
   readRoadmap,
   readArchivedChanges,
+  missingFrom,
 } from '@mollyguard/store';
 import { amber, bold, dim, info, red, teal, warn } from './ui';
 
@@ -68,7 +70,8 @@ export interface Finding {
     | 'orphaned'
     | 'dangling-alters'
     | 'realised-roadmap'
-    | 'dangling-roadmap';
+    | 'dangling-roadmap'
+    | 'incomplete';
   /** The change it is about, where it is about one. */
   readonly change?: string;
   readonly message: string;
@@ -185,6 +188,26 @@ async function gather(root: string, dir: string): Promise<Report> {
   const base = await readBase(root);
 
   const findings: Finding[] = [];
+
+  // What this version of the tool writes into a corpus and this corpus does not have.
+  //
+  // Reported because `init` is the only command that writes the skeleton, so everything added to
+  // the shape of a corpus after it was made reaches it only if somebody runs `init` again — and
+  // until they know something is missing, they have no reason to. `<root>/.gitattributes` is the
+  // case that made this worth having: it fixes a ledger conflict whose remedy is undiscoverable,
+  // and every corpus made before it had the defect with nothing anywhere saying so.
+  //
+  // **It never fails.** A corpus that works and predates a file a later version writes is not
+  // broken, and failing here would make upgrading the tool a build break — which is the surest
+  // way to teach a project not to upgrade.
+  const absent = missingFrom(root, AREAS.map((a) => a.name));
+  if (absent.length > 0) {
+    findings.push({
+      kind: 'incomplete',
+      message: `${dir}/ is missing ${absent.length} file(s) this version writes: ${absent.join(', ')} — run \`molly init\` to add them`,
+      fails: false,
+    });
+  }
 
   // Something in `changes/` that could not be read, which **fails** — and used to depend on its
   // neighbours. A bundle with broken frontmatter exited 1 when it was the only change in the
@@ -469,6 +492,19 @@ function render(report: Report, dir: string): void {
         info(`      ${document.name.padEnd(width)}  ${dim(document.title)}`);
       }
     }
+  }
+
+  // Before the empty-listing branch, and outside it, because this is not a fact about changes.
+  //
+  // That branch enumerates the finding kinds that may contradict *no changes yet*, and a kind it
+  // does not enumerate is a kind it hides — which is the failure `what a command may never do
+  // silently` records about this exact branch, one kind further along. A corpus-level finding
+  // does not contradict the sentence; it sits above it and is true either way.
+  const incomplete = report.findings.filter((finding) => finding.kind === 'incomplete');
+  for (const finding of incomplete) {
+    info(`  ${amber('!')} ${finding.message.split(' — ')[0] ?? finding.message}`);
+    info(dim('    `molly init` writes what is absent and keeps everything that is there'));
+    info();
   }
 
   if (report.changes.length === 0) {

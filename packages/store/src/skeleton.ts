@@ -14,6 +14,7 @@
 import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join, posix } from 'node:path';
+import { ATTRIBUTES_FILE, HISTORY_FILE, README_FILE, STATE_DIR } from './layout';
 
 /**
  * What happened to one file.
@@ -33,4 +34,33 @@ export async function place(root: string, path: string, text: string): Promise<P
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, text, 'utf8');
   return 'created';
+}
+
+/**
+ * Every path `molly init` writes inside a corpus, corpus-relative.
+ *
+ * Here rather than inside `init` because a second reader arrived: `molly status` reports what is
+ * missing, and two lists of the same thing would drift the day one of them gained a file. The
+ * areas are not in it — they come from the table in core, which is where an area is declared —
+ * so this is the rest: the explainers that belong to no area, the ledger, and the attributes
+ * file that makes it mergeable.
+ *
+ * `conventions.md` is deliberately absent. It is a file the *project* writes and `init` merely
+ * makes room for; a corpus without one is a project with no rules of its own, and reporting it
+ * as missing would make an invitation into a nag.
+ */
+export const SKELETON: readonly string[] = [
+  README_FILE,
+  ATTRIBUTES_FILE,
+  HISTORY_FILE,
+  posix.join(STATE_DIR, README_FILE),
+];
+
+/** Which of them a corpus does not have. Ordered as above, so the report reads the same way twice. */
+export function missingFrom(root: string, areas: readonly string[]): readonly string[] {
+  const absent = (path: string): boolean => !existsSync(join(root, path));
+  return [
+    ...areas.map((area) => posix.join(area, README_FILE)).filter(absent),
+    ...SKELETON.filter(absent),
+  ];
 }

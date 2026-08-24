@@ -14,6 +14,17 @@
  * already had, so every file here is placed only where there is nothing, and what was found is
  * named at the end. The corpus is still made either way — keeping a file is not a refusal.
  *
+ * **Run where a corpus already is, it completes rather than refuses.** This is the only command
+ * that writes the skeleton, so everything a later version adds to the shape of a corpus reached
+ * new corpora only: `<root>/.gitattributes` fixed a real defect and every corpus made before it
+ * still had the defect and no remedy, because the command carrying the fix declined to run. The
+ * recipe that worked was to move the configuration out of the way so the check found nothing,
+ * run this, and put it back — the tool asking its users to defeat the guard that protects them.
+ *
+ * What is still refused is a **second** `mollyguard.yml`. That file is the one answer to *where
+ * is the corpus*, and the refusal was always about the file rather than about the command; it
+ * had simply been doing duty as both.
+ *
  * **Two places, and only one of them is the corpus.** `mollyguard.yml` goes at the top of the
  * repository and names the directory; the directory holds the areas. That is what lets every
  * other command find the corpus from anywhere inside the repository instead of being told where
@@ -33,6 +44,8 @@ import {
   ATTRIBUTES_FILE,
   CONFIG_FILE,
   CONVENTIONS_FILE,
+  DEFAULT_ROOT,
+  readConfig,
   HISTORY_FILE,
   LEDGER_MERGE,
   README_FILE,
@@ -84,35 +97,50 @@ lang: ${lang}
 
 export async function initCommand(
   cwd: string,
-  dir: string,
-  given: string | undefined,
+  asked: string | undefined,
+  chosen: string | undefined,
 ): Promise<number> {
-  const lang = given ?? 'en';
-  const root = join(cwd, dir);
-
-  // A corpus already configured *here*, in either layout — not one somewhere above, which a
-  // package inside a larger repository would legitimately sit under. Refused rather than added
-  // to: one configuration names one corpus, so a second here would be a second answer to "where
-  // is the corpus", and having exactly one answer is why the file moved up in the first place.
   const already = await corpusAt(cwd);
-  if (already !== undefined) {
+
+  // A corpus here and a *different* directory asked for is a request for a second one, and that
+  // is what the refusal has always been about: one configuration names one corpus, so a second
+  // here would be a second answer to where the corpus is. Asking for the one that exists — or
+  // asking for nothing, which is the daily case — is a request to complete it.
+  if (already !== undefined && asked !== undefined && asked !== already.dir) {
     fail(
       `a corpus is already here, at ${already.dir}/`,
-      `${relative(cwd, already.config) || CONFIG_FILE} configures it — delete that file to start over, or run this in another directory`,
+      `${relative(cwd, already.config) || CONFIG_FILE} configures it — run \`molly init\` with no --root to complete that corpus, or run this in another directory`,
     );
   }
+
+  // Nothing here rewrites a configuration that exists. `--lang` would be a request to change one,
+  // and silently ignoring a flag is the failure this tool refuses everywhere else.
+  if (already !== undefined && chosen !== undefined) {
+    fail(
+      `a corpus is already here, at ${already.dir}/`,
+      `its language is set in ${relative(cwd, already.config) || CONFIG_FILE} — edit that file; \`molly init\` will not rewrite it`,
+    );
+  }
+
+  const completing = already !== undefined;
+  const dir = already?.dir ?? asked ?? DEFAULT_ROOT;
+  const lang = chosen ?? 'en';
+  const root = already?.root ?? join(cwd, dir);
 
   await mkdir(join(root, STATE_DIR), { recursive: true });
 
   // Written at the top of the repository rather than into the corpus. It is the one file here
-  // that is not part of the corpus at all: it is what says where the corpus is.
-  await place(cwd, CONFIG_FILE, CONFIG(dir, lang));
+  // that is not part of the corpus at all: it is what says where the corpus is — which is why a
+  // completing run leaves it exactly as it is, `naming:` policy and all.
+  if (!completing) await place(cwd, CONFIG_FILE, CONFIG(dir, lang));
 
   // What was found rather than written, in the order it was met. Reported at the end so the
   // summary reads as one answer rather than as a write interrupted by complaints.
   const kept: string[] = [];
+  const created: string[] = [];
   const put = async (path: string, text: string): Promise<void> => {
     if ((await place(root, path, text)) === 'kept') kept.push(`${dir}/${path}`);
+    else created.push(`${dir}/${path}`);
   };
 
 
@@ -146,18 +174,36 @@ export async function initCommand(
     await put(posix.join(directory, README_FILE), readmeFor(directory));
   }
 
-  const readmes = directories.length + 2 - kept.filter((path) => path.endsWith(README_FILE)).length;
+  // The two runs must not print the same thing. One made a corpus; the other found one and added
+  // what this version writes and it did not have — and somebody reading the second needs to know
+  // which files are new, because everything else was theirs already.
+  if (completing) {
+    const declared = (await readConfig(already.config)).lang;
+    info(`${green('*')} corpus completed at ${teal(`${dir}/`)}`);
+    info();
+    info(
+      `  ${dim('config')}      ${relative(cwd, already.config) || CONFIG_FILE} ${dim('— left exactly as it is')}`,
+    );
+    info(`  ${dim('added')}       ${created.length === 0 ? dim('nothing — it already had everything this version writes') : created.length + ' file(s)'}`);
+    for (const path of created) info(`    ${green('+')} ${path}`);
+    info(`  ${dim('kept')}        ${kept.length} file(s) — everything that was already there`);
+    if (declared !== undefined) info(`  ${dim('language')}    ${declared} ${dim('— from the configuration, not from this run')}`);
+    info(`  ${dim('agents')}      instructions, reinstalled`);
+    info();
+  } else {
+    const readmes = directories.length + 2 - kept.filter((path) => path.endsWith(README_FILE)).length;
 
-  info(`${green('*')} corpus initialised at ${teal(`${dir}/`)}`);
-  info();
-  info(`  ${dim('config')}      ${CONFIG_FILE} ${dim(`— names ${dir}/, so no --root is needed`)}`);
-  info(`  ${dim('areas')}       ${directories.join(', ')}`);
-  info(`  ${dim('readme')}      ${readmes} file(s) — one per directory, saying what belongs in it`);
-  info(`  ${dim('knowledge')}   ${dim('empty — nothing is true until a change is published')}`);
-  info(`  ${dim('yours')}       ${CONVENTIONS_FILE} ${dim('— this project\'s own rules, empty and pointed at by every skill')}`);
-  info(`  ${dim('language')}    ${lang}`);
-  info(`  ${dim('agents')}      instructions, in the directories agent tools read`);
-  info();
+    info(`${green('*')} corpus initialised at ${teal(`${dir}/`)}`);
+    info();
+    info(`  ${dim('config')}      ${CONFIG_FILE} ${dim(`— names ${dir}/, so no --root is needed`)}`);
+    info(`  ${dim('areas')}       ${directories.join(', ')}`);
+    info(`  ${dim('readme')}      ${readmes} file(s) — one per directory, saying what belongs in it`);
+    info(`  ${dim('knowledge')}   ${dim('empty — nothing is true until a change is published')}`);
+    info(`  ${dim('yours')}       ${CONVENTIONS_FILE} ${dim('— this project\'s own rules, empty and pointed at by every skill')}`);
+    info(`  ${dim('language')}    ${lang}`);
+    info(`  ${dim('agents')}      instructions, in the directories agent tools read`);
+    info();
+  }
 
   // Named, not counted. A count tells somebody a file of theirs was met and leaves them to find
   // which — and the whole point of keeping it was that they already had something there worth
@@ -172,7 +218,7 @@ export async function initCommand(
     unmerged = !existing.includes(LEDGER_MERGE);
   }
 
-  if (kept.length > 0) {
+  if (kept.length > 0 && !completing) {
     info(`  ${amber('!')} ${kept.length} file(s) were already here, and were left as they are`);
     for (const path of kept) info(`    ${dim(path)}`);
 
@@ -202,6 +248,10 @@ export async function initCommand(
   await agentsCommand(cwd, { check: false });
 
   info();
-  info(`Next: ${bold('molly change new "<title>"')} — nothing enters the base any other way.`);
+  info(
+    completing
+      ? `Next: ${bold('molly status')} — it says what this corpus holds and what disagrees.`
+      : `Next: ${bold('molly change new "<title>"')} — nothing enters the base any other way.`,
+  );
   return 0;
 }

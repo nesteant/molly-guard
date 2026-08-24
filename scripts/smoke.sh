@@ -123,7 +123,9 @@ check "and the listing holds every command but one" 0 "9" -- sh -c '
 # ------------------------------------------------------------------------------- init
 printf '\ninit\n'
 check "it scaffolds a corpus"             0 "corpus initialised" -- m init
-check "it refuses to overwrite one"       1 "a corpus is already here" -- m init
+check "a second run completes it"         0 "corpus completed" -- m init
+check "and writes nothing the second time" 0 "already had everything" -- m init
+check "a second corpus is still refused"  1 "a corpus is already here" -- m init --root other
 
 # Every directory, present and explained. Git tracks no empty directory, so a skeleton
 # without these is a corpus that vanishes on clone.
@@ -1714,7 +1716,12 @@ check "a second corpus here is refused"    1 "a corpus is already here" -- sh -c
   node '"$BIN"' init --root other'
 check "and it names what configures it"    1 "mollyguard.yml configures it" -- sh -c '
   cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
-  node '"$BIN"' init'
+  node '"$BIN"' init --root other'
+# Silently ignoring a flag is the failure this tool refuses everywhere else, and `--lang` on a
+# corpus that has one is a request to rewrite a configuration this run leaves alone.
+check "and --lang on one that exists too"  1 "will not rewrite it" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' init --lang uk'
 # A package inside a larger repository may have its own, so the refusal is about this directory
 # rather than about anything above it. Discovery walks up, so the nearest one wins.
 check "one below another is allowed"       0 "corpus initialised" -- sh -c '
@@ -1740,9 +1747,17 @@ check "a corpus in the old layout still reads" 0 "capabilities  old" -- sh -c '
 check "and is still found from below"      0 "capabilities  old" -- sh -c '
   '"$(declare -f legacy)"'; legacy
   mkdir -p deep/er && cd deep/er && node '"$BIN"' status'
-check "and init will not double it"        1 "a corpus is already here" -- sh -c '
+check "and init completes it in place"     0 "corpus completed" -- sh -c '
   '"$(declare -f legacy)"'; legacy
   node '"$BIN"' init'
+check "without writing a second config"    0 "ok" -- sh -c '
+  '"$(declare -f legacy)"'; legacy
+  node '"$BIN"' init >/dev/null
+  test -f mollyguard.yml && { echo "it migrated the layout"; exit 1; }
+  echo ok'
+check "and init will not double it"        1 "a corpus is already here" -- sh -c '
+  '"$(declare -f legacy)"'; legacy
+  node '"$BIN"' init --root other'
 # `--root` still names the corpus directory, for the odd case and for a corpus not at docs/.
 check "the flag still points at one"       0 "capabilities  old" -- sh -c '
   '"$(declare -f legacy)"'; legacy
@@ -2419,6 +2434,76 @@ check "between names the states, from a literal table" 0 "ok" -- sh -c '
     console.log("ok");
   '"'"''
 
+# ------------------------------------- an existing corpus receives what a later version writes
+#
+# `init` is the only command that writes the skeleton and it used to refuse outright where a
+# corpus already was, so everything a later version added to the shape of a corpus reached new
+# corpora only — permanently, with nothing anywhere saying so. The recipe that worked was to move
+# the configuration out of the way so the check found nothing, which is the tool asking its users
+# to defeat the guard that protects them.
+printf '\n%s\n' "$(dim 'an existing corpus receives what a later version writes')"
+
+# The case that made this worth building: `<root>/.gitattributes` fixes a ledger conflict whose
+# remedy is undiscoverable, and every corpus made before it had the defect and no way to get it.
+check "a corpus missing .gitattributes gains it" 0 "ok" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes
+  node "$BIN" init >/dev/null
+  test -f docs/.gitattributes && grep -q "merge=union" docs/.gitattributes && echo ok'
+check "a corpus missing an area gains it"      0 "ok" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm -r docs/roadmap
+  node "$BIN" init >/dev/null
+  test -f docs/roadmap/README.md && echo ok'
+
+# Everything found is kept, and the ledger is asserted on its own: it is the one file in a corpus
+# that cannot be written again from anything, and the workaround this replaces put it at risk.
+check "the ledger is untouched"                0 "ok" -- sh -c '
+  '"$(declare -f scratch)"'; scratch
+  node "$BIN" change new "A" --name a >/dev/null
+  before=$(cksum < docs/.mollyguard/history.jsonl)
+  rm docs/.gitattributes; node "$BIN" init >/dev/null
+  [ "$before" = "$(cksum < docs/.mollyguard/history.jsonl)" ] || { echo "the ledger changed"; exit 1; }
+  echo ok'
+check "and so is the configuration"            0 "ok" -- sh -c '
+  '"$(declare -f scratch)"'; scratch
+  printf "\nnaming:\n  changes: %s\n" "'"'"'{ordinal:4}-{slug}'"'"'" >> mollyguard.yml
+  before=$(cksum < mollyguard.yml)
+  rm docs/.gitattributes; node "$BIN" init >/dev/null
+  [ "$before" = "$(cksum < mollyguard.yml)" ] || { echo "the config was rewritten"; exit 1; }
+  echo ok'
+
+# A project that made an explainer its own does not lose it to an upgrade. This is the half that
+# decides whether anybody dares run the command twice.
+check "a hand-written explainer survives"      0 "Ours, not the tool s." -- sh -c '
+  '"$(declare -f scratch)"'; scratch
+  printf "Ours, not the tool s.\n" > docs/specs/README.md
+  node "$BIN" init >/dev/null
+  cat docs/specs/README.md'
+check "and is named among what was kept"       0 "kept" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes; node "$BIN" init'
+
+# The two runs must not read alike: one made a corpus, the other added to one that was there.
+check "a completing run says so"               0 "corpus completed" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes; node "$BIN" init'
+refute "and does not claim to have made one"   "corpus initialised" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes; node "$BIN" init'
+check "and names exactly what it added"        0 "+ docs/.gitattributes" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes; node "$BIN" init'
+check "a run with nothing to add says that"    0 "already had everything" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; node "$BIN" init'
+
+# Reported by the command a planner already runs, so the gap is visible before somebody has to
+# know to look — and never a failure, because a corpus that works and predates a file is not
+# broken, and failing here would make upgrading the tool a build break.
+check "status names what is missing"           0 "is missing 1 file(s) this version writes" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes; node "$BIN" status'
+check "and does not fail for it"               0 "ok" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes
+  node "$BIN" status >/dev/null && echo ok'
+refute "and says nothing once completed"       "this version writes" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes
+  node "$BIN" init >/dev/null; node "$BIN" status'
+check "it is in --json as a finding"           0 "incomplete" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes; node "$BIN" status --json'
 # ------------------------------------------ a corpus arrives with a place for its own rules
 #
 # Four installed skills point at <root>/conventions.md and rank it above their own contents, and
@@ -2564,7 +2649,7 @@ printf '\n%s\n' "$(dim 'the refusals a help entry names')"
 
 
 check "init: a second corpus here"          1 "a corpus is already here" -- sh -c '
-  '"$(declare -f scratch)"'; scratch; node "$BIN" init'
+  '"$(declare -f scratch)"'; scratch; node "$BIN" init --root other'
 check "capability: a title that loses words" 1 "reduce to nothing" -- sh -c '
   '"$(declare -f scratch)"'; scratch; node "$BIN" capability new "Вхід через Entra ID"'
 check "change: a title that loses words"    1 "reduce to nothing" -- sh -c '

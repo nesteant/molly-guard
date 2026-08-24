@@ -178,3 +178,9 @@
 {"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:56:18.851Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:56:18.952Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T18:56:42.566Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T18:57:27.543Z","kind":"transition","from":"draft","to":"review","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T18:57:27.846Z","kind":"transition","from":"review","to":"approved","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T18:57:28.103Z","kind":"transition","from":"approved","to":"in_progress","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T19:14:35.228Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T19:14:35.340Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T19:14:35.446Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}

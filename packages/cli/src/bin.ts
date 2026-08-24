@@ -17,7 +17,7 @@ import { moveCommand } from './move';
 import { publishCommand } from './publish';
 import { newRoadmapCommand } from './roadmap';
 import { statusCommand } from './status';
-import { Corpus, DEFAULT_ROOT, locateCorpus, readConfig } from '@mollyguard/store';
+import { Corpus, locateCorpus, readConfig } from '@mollyguard/store';
 import { bold, dim, fail, info, teal, warn } from './ui';
 
 interface Args {
@@ -106,6 +106,7 @@ const COMMANDS: Readonly<Record<string, Command>> = {
     flags: ['lang'],
     refuses: [
       'a second corpus where one is already configured, naming the file that configures it',
+      '--lang where a corpus exists, because its language is in a file this run leaves alone',
     ],
   },
   capability: {
@@ -406,7 +407,9 @@ async function main(): Promise<void> {
   // `init` creates rather than finds, so it is the one command that does not look for a corpus —
   // it is handed the working directory and the name of the directory to make.
   if (args.command === 'init') {
-    process.exit(await initCommand(process.cwd(), given ?? DEFAULT_ROOT, flag(args, 'lang')));
+    // `--root` is passed as given rather than defaulted, because init has to tell *complete the
+    // corpus that is here* from *make a second one*, and only the caller's silence says which.
+    process.exit(await initCommand(process.cwd(), given, flag(args, 'lang')));
   }
 
   // Found once, here, rather than by seven commands each repeating the same guard with the same
