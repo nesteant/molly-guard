@@ -72,6 +72,8 @@ refute() {
 m() { node "$BIN" "$@"; }
 
 [[ -f "$BIN" ]] || { printf '%s\n' "$(red 'dist/bin.js is missing — run `npm run build` first')"; exit 2; }
+[[ -f "$CORE" ]] || { printf '%s\n' "$(red 'core/dist/index.js is missing — run `npm run build` first')"; exit 2; }
+export WORK  # so a scratch corpus is made under it and swept by the same trap
 
 cd "$WORK" || exit 2
 
@@ -97,9 +99,11 @@ check "an unknown command is a refusal"   1 "unknown command" -- m nonsense
 printf '\nhelp\n'
 check "a command answers for itself"      0 "--dry-run"        -- m publish --help
 refute "rather than printing the listing" "molly capability new" -- m publish --help
+check "and exits 0 doing it"              0 "molly publish"    -- m publish --help
 check "molly help <command> is the same"  0 "--dry-run"        -- m help publish
 check "it names what the command refuses" 0 "disagrees with the ledger" -- m move --help
-check "a command with no refusals says so" 0 "molly status"    -- m status --help
+refute "a command with no refusals shows none" "refuses" -- m status --help
+check "and still prints its usage"        0 "molly status"     -- m status --help
 check "the bare listing is still the listing" 0 "molly agents" -- m help
 check "a bad flag does not pre-empt it"   0 "molly publish"    -- m publish --help --nonsense
 check "an unknown command gets the typo's message" 1 "unknown command" -- m frobnicate --help
@@ -2359,42 +2363,133 @@ check "publish still refuses at the write"  1 "would be filed under no capabilit
 # deliberate jump.
 printf '\n%s\n' "$(dim 'a move that crosses several states')"
 
-moved() { cd "$(mktemp -d)" || exit 2; node "$BIN" init >/dev/null 2>&1; node "$BIN" change new "A" --name a >/dev/null 2>&1; }
+# Under $WORK so the EXIT trap removes them. The open-coded `mktemp -d` elsewhere in this file
+# leaks a corpus per assertion, and these two are where the idiom finally got a name.
+scratch() { cd "$(mktemp -d "$WORK/tmp.XXXXXX")" || exit 2; node "$BIN" init >/dev/null 2>&1; }
+moved() { scratch; node "$BIN" change new "A" --name a >/dev/null 2>&1; }
 
 check "a six-edge advance names what it passed" 0 "skipped review, approved, in_progress, implemented, verified" -- sh -c '
-  '"$(declare -f moved)"'; moved; node "$BIN" move a deployed'
-check "and records one transition, not six"     0 "1" -- sh -c '
-  '"$(declare -f moved)"'; moved; node "$BIN" move a deployed >/dev/null
-  grep -c transition docs/.mollyguard/history.jsonl | tr -d " "'
+  '"$(declare -f scratch); $(declare -f moved)"'; moved; node "$BIN" move a deployed'
+check "and records one transition, not six"     0 "ok" -- sh -c '
+  '"$(declare -f scratch); $(declare -f moved)"'; moved; node "$BIN" move a deployed >/dev/null
+  n=$(grep -c transition docs/.mollyguard/history.jsonl | tr -d " ")
+  [ "$n" = "1" ] || { echo "the ledger holds $n transitions, not 1"; exit 1; }
+  echo ok'
 check "a return names them the way it went"     0 "skipped verified, implemented, in_progress, approved" -- sh -c '
-  '"$(declare -f moved)"'; moved; node "$BIN" move a deployed >/dev/null; node "$BIN" move a review'
+  '"$(declare -f scratch); $(declare -f moved)"'; moved; node "$BIN" move a deployed >/dev/null; node "$BIN" move a review'
 refute "an adjacent move says nothing of a skip" "skipped" -- sh -c '
-  '"$(declare -f moved)"'; moved; node "$BIN" move a review'
+  '"$(declare -f scratch); $(declare -f moved)"'; moved; node "$BIN" move a review'
 refute "and neither does one that stays"         "skipped" -- sh -c '
-  '"$(declare -f moved)"'; moved; node "$BIN" move a review >/dev/null; node "$BIN" move a review'
+  '"$(declare -f scratch); $(declare -f moved)"'; moved; node "$BIN" move a review >/dev/null; node "$BIN" move a review'
 check "a skip is reported, never refused"        0 "advances" -- sh -c '
-  '"$(declare -f moved)"'; moved; node "$BIN" move a deployed'
+  '"$(declare -f scratch); $(declare -f moved)"'; moved; node "$BIN" move a deployed'
 
 # Arithmetic over the sequence, asserted where it lives. Every ordered pair including the equal
 # ones and the terminal state — a table is cheaper than provoking sixty-four cases through a CLI.
-check "between is total over every ordered pair" 0 "ok" -- sh -c '
+check "between names the states, from a literal table" 0 "ok" -- sh -c '
   node -e '"'"'
-    const { STATES, between, positionOf } = require(process.env.CORE);
-    for (const from of STATES) for (const to of STATES) {
+    const { STATES, between } = require(process.env.CORE);
+    // Written out rather than computed. An expectation derived from the same arithmetic as the
+    // function is a tautology: move the bound in lifecycle.ts and the expectation moves with it.
+    const table = [
+      ["draft", "deployed", ["review", "approved", "in_progress", "implemented", "verified"]],
+      ["deployed", "draft", ["verified", "implemented", "in_progress", "approved", "review"]],
+      ["in_progress", "published", ["implemented", "verified", "deployed"]],
+      ["published", "in_progress", ["deployed", "verified", "implemented"]],
+      ["draft", "approved", ["review"]],
+      ["approved", "draft", ["review"]],
+      ["draft", "review", []],
+      ["review", "draft", []],
+      ["draft", "draft", []],
+      ["published", "published", []],
+    ];
+    for (const [from, to, want] of table) {
       const got = between(from, to);
-      const here = positionOf(from), there = positionOf(to);
-      const want = STATES.slice(Math.min(here, there) + 1, Math.max(here, there));
-      const expect = here < there ? want : [...want].reverse();
-      if (JSON.stringify(got) !== JSON.stringify(expect)) {
-        console.log(`${from} -> ${to}: ${got} != ${expect}`); process.exit(1);
-      }
-      if (Math.abs(there - here) < 2 && got.length !== 0) {
-        console.log(`${from} -> ${to} should be empty`); process.exit(1);
+      if (JSON.stringify(got) !== JSON.stringify(want)) {
+        console.log(`${from} -> ${to}: [${got}] != [${want}]`); process.exit(1);
       }
     }
+    // And total: every ordered pair answers with an array, none throws.
+    let pairs = 0;
+    for (const from of STATES) for (const to of STATES) {
+      if (!Array.isArray(between(from, to))) { console.log(`${from} -> ${to} is not a list`); process.exit(1); }
+      pairs++;
+    }
+    if (pairs !== 64) { console.log(`${pairs} pairs, not 64`); process.exit(1); }
     console.log("ok");
   '"'"''
 
+# --------------------------------------------- publishing names what it moved out from under
+#
+# Publishing moves changes/<name>/ into history/<name>/ and nothing else in the corpus is told,
+# so every relative link that resolved into it stops resolving — in documents belonging to
+# changes nobody touched. Reported, never repaired: rewriting a link inside a change in flight
+# edits a document under review, and an `alters:` line rewritten moves that change's content
+# hash and un-approves work against a document somebody merely tidied.
+printf '\n%s\n' "$(dim 'publishing names what it moved out from under')"
+
+# One change referencing another, plus a link that stays valid, an external one, and one that was
+# already broken before this ran. Only the first is this publication's doing.
+pointed() {
+  scratch
+  node "$BIN" capability new "Billing" --name billing >/dev/null 2>&1
+  node "$BIN" change new "One" --name one --capability billing >/dev/null 2>&1
+  node "$BIN" change new "Two" --name two --capability billing >/dev/null 2>&1
+  {
+    printf 'See [one](../one/change.md).\n'
+    printf 'And [the area](../../capabilities/billing.md).\n'
+    printf 'And [the web](https://example.com/x).\n'
+    printf 'And [gone](../nowhere/change.md).\n'
+  } >> docs/changes/two/change.md
+  mkdir -p docs/changes/one/publish/specs/x
+  printf -- "---\ntitle: X\nlang: en\ncapability: billing\n---\n\nBody.\n" > docs/changes/one/publish/specs/x/spec.md
+}
+
+check "a live change pointing at it is named"  0 "changes/two/change.md:19" -- sh -c '
+  '"$(declare -f scratch); $(declare -f pointed)"'; pointed; node "$BIN" publish one'
+check "with the target and where it went"      0 "../one/change.md → docs/history/one/" -- sh -c '
+  '"$(declare -f scratch); $(declare -f pointed)"'; pointed; node "$BIN" publish one'
+check "and exactly one of the four links"      0 "1 reference(s)" -- sh -c '
+  '"$(declare -f scratch); $(declare -f pointed)"'; pointed; node "$BIN" publish one'
+
+# The half this whole design turns on. Reporting is the remedy; editing somebody else's document
+# to keep the tool correct is the write `capabilities/the-corpus` puts outside this tool.
+check "the referring document is not touched"  0 "ok" -- sh -c '
+  '"$(declare -f scratch); $(declare -f pointed)"'; pointed
+  before=$(cksum < docs/changes/two/change.md)
+  node "$BIN" publish one >/dev/null
+  after=$(cksum < docs/changes/two/change.md)
+  [ "$before" = "$after" ] || { echo "the document was rewritten"; exit 1; }
+  echo ok'
+
+check "the publication is not refused for it"  0 "published" -- sh -c '
+  '"$(declare -f scratch); $(declare -f pointed)"'; pointed; node "$BIN" publish one'
+check "and its documents are filed"            0 "ok" -- sh -c '
+  '"$(declare -f scratch); $(declare -f pointed)"'; pointed; node "$BIN" publish one >/dev/null
+  test -f docs/specs/x/spec.md && echo ok'
+
+refute "a link that still resolves is not named" "capabilities/billing.md" -- sh -c '
+  '"$(declare -f scratch); $(declare -f pointed)"'; pointed; node "$BIN" publish one'
+refute "an external link is not named"          "example.com" -- sh -c '
+  '"$(declare -f scratch); $(declare -f pointed)"'; pointed; node "$BIN" publish one'
+refute "breakage that was already there is not" "nowhere" -- sh -c '
+  '"$(declare -f scratch); $(declare -f pointed)"'; pointed; node "$BIN" publish one'
+
+# history/ is sealed and never re-checked, so a link inside the bundle just archived — correct
+# from changes/ and wrong from history/ — is deliberately not this tool's finding.
+refute "a link inside the archived bundle is not" "publish/specs/x" -- sh -c '
+  '"$(declare -f scratch); $(declare -f pointed)"'; pointed
+  printf "See [its own](./publish/specs/x/spec.md).\n" >> docs/changes/one/plan.md
+  node "$BIN" publish one'
+
+# The ordinary publication, proven quiet. A report that fires on every run is one nobody reads.
+refute "an ordinary publication says nothing"   "resolve to nothing" -- sh -c '
+  '"$(declare -f scratch)"'; scratch
+  node "$BIN" capability new "Billing" --name billing >/dev/null
+  node "$BIN" change new "One" --name one --capability billing >/dev/null
+  mkdir -p docs/changes/one/publish/specs/x
+  printf -- "---\ntitle: X\nlang: en\ncapability: billing\n---\n\nBody.\n" > docs/changes/one/publish/specs/x/spec.md
+  node "$BIN" publish one'
 # ------------------------------------------- the refusals a command names in its help still fire
 #
 # `refuses:` is the one field in the command table that cannot be read off the source, so it is
@@ -2403,50 +2498,67 @@ check "between is total over every ordered pair" 0 "ok" -- sh -c '
 # than becoming a false statement about the tool.
 printf '\n%s\n' "$(dim 'the refusals a help entry names')"
 
-fresh() { cd "$(mktemp -d)" || exit 2; node "$BIN" init >/dev/null 2>&1; }
+
 
 check "init: a second corpus here"          1 "a corpus is already here" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" init'
+  '"$(declare -f scratch)"'; scratch; node "$BIN" init'
 check "capability: a title that loses words" 1 "reduce to nothing" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" capability new "Вхід через Entra ID"'
+  '"$(declare -f scratch)"'; scratch; node "$BIN" capability new "Вхід через Entra ID"'
 check "change: a title that loses words"    1 "reduce to nothing" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "Вхід через Entra ID"'
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "Вхід через Entra ID"'
 check "change: an unknown capability"       1 "no capability named" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a --capability nope'
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "A" --name a --capability nope'
 check "change: an unknown roadmap entry"    1 "nope" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a --realises nope'
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "A" --name a --realises nope'
 check "roadmap: a title that loses words"   1 "reduce to nothing" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" roadmap new "Вхід через Entra ID"'
+  '"$(declare -f scratch)"'; scratch; node "$BIN" roadmap new "Вхід через Entra ID"'
 check "move: a state that is not one"       1 "is not a state" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "A" --name a >/dev/null
   node "$BIN" move a nowhere'
 check "move: published is not recorded"     1 "reached by publishing" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "A" --name a >/dev/null
   node "$BIN" move a published'
 check "move: a state: that disagrees"       1 "the ledger says" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "A" --name a >/dev/null
   sed -i.bak "s/^state: draft/state: verified/" docs/changes/a/change.md
   node "$BIN" move a review'
 check "publish: a state: that disagrees"    1 "the ledger says" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "A" --name a >/dev/null
   sed -i.bak "s/^state: draft/state: verified/" docs/changes/a/change.md
   node "$BIN" publish a'
 check "publish: no publish/ folder"         1 "carries no publish/" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "A" --name a >/dev/null
   node "$BIN" publish a'
 check "publish: a payload that is empty"    1 "publishing nothing" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "A" --name a >/dev/null
   mkdir -p docs/changes/a/publish; node "$BIN" publish a'
 check "publish: a name the policy would not mint" 1 "is not the name this corpus mints" -- sh -c '
-  '"$(declare -f fresh)"'; fresh
+  '"$(declare -f scratch)"'; scratch
   printf "\nnaming:\n  specs: %s\n" "'"'"'{ordinal:4}-{slug}'"'"'" >> mollyguard.yml
   node "$BIN" capability new "Billing" --name billing >/dev/null
   node "$BIN" change new "A" --name a --capability billing >/dev/null
   mkdir -p docs/changes/a/publish/specs/retries
   printf -- "---\ntitle: R\nlang: en\ncapability: billing\n---\n\nB.\n" > docs/changes/a/publish/specs/retries/spec.md
   node "$BIN" publish a'
+check "publish: a document it cannot read"  1 "could not be read" -- sh -c '
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "A" --name a >/dev/null
+  mkdir -p docs/changes/a/publish/specs/x
+  printf -- "---\ntitle: X\nlang: en\n---\n\nB.\n" > docs/changes/a/publish/specs/x/spec.md
+  chmod 000 docs/changes/a/publish/specs/x/spec.md
+  node "$BIN" publish a'
+check "publish: a payload already in the base" 1 "byte-identical" -- sh -c '
+  '"$(declare -f scratch)"'; scratch
+  node "$BIN" capability new "Billing" --name billing >/dev/null
+  node "$BIN" change new "A" --name a --capability billing >/dev/null
+  mkdir -p docs/changes/a/publish/specs/x
+  printf -- "---\ntitle: X\nlang: en\ncapability: billing\n---\n\nB.\n" > docs/changes/a/publish/specs/x/spec.md
+  node "$BIN" publish a >/dev/null
+  node "$BIN" change new "B" --name b --capability billing >/dev/null
+  mkdir -p docs/changes/b/publish/specs/x
+  cp docs/specs/x/spec.md docs/changes/b/publish/specs/x/spec.md
+  node "$BIN" publish b'
 check "publish: filed under no capability"  1 "would be filed under no capability" -- sh -c '
-  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  '"$(declare -f scratch)"'; scratch; node "$BIN" change new "A" --name a >/dev/null
   mkdir -p docs/changes/a/publish/specs/x
   printf -- "---\ntitle: X\nlang: en\n---\n\nB.\n" > docs/changes/a/publish/specs/x/spec.md
   node "$BIN" publish a'

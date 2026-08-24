@@ -17,6 +17,7 @@ export * from './layout';
 export * from './locate';
 export * from './naming';
 export * from './publish';
+export * from './references';
 export * from './roadmap';
 export * from './scaffold';
 export * from './skeleton';

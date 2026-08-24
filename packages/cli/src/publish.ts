@@ -46,6 +46,7 @@ import {
   parseDocument,
   readCapabilities,
   readChanges,
+  referencesInto,
   readHistory,
   readConfig,
   readPublishSet,
@@ -55,7 +56,7 @@ import {
 } from '@mollyguard/store';
 import { identity } from './identity';
 import { chooseChange } from './pick';
-import { bold, dim, fail, green, info, teal, warn } from './ui';
+import { amber, bold, dim, fail, green, info, teal, warn } from './ui';
 
 export interface PublishOptions {
   readonly change: string | undefined;
@@ -296,7 +297,49 @@ export async function publishCommand(
 
   info(`${green('*')} ${teal(bundle.node)} ${dim(`published — ${from} → ${TERMINAL}, ${by}`)}`);
   report(created, replaced, into, slug, dir);
+  await reportReferences(root, dir, slug, into);
   return 0;
+}
+
+/**
+ * What pointed into the bundle this run just archived.
+ *
+ * Asked after the move, because the move is what breaks them. Publishing is a corpus-wide event
+ * and this is the only actor holding both halves at the moment they diverge: it knows exactly
+ * which path it moved, and the corpus is markdown it can read.
+ *
+ * **Reported, never repaired, and never a refusal.** Rewriting a link inside a change in flight
+ * would edit a document under review, and where the reference is an `alters:` line it would move
+ * that change's content hash and un-approve work against a document somebody merely tidied — so
+ * `capabilities/the-corpus` puts repair outside this tool entirely. And refusing would make
+ * *edit a document belonging to an unrelated change* a precondition for publishing, which is
+ * worse than the break: the write has already happened by the time these can be checked, and a
+ * publication that happened is not a refusal.
+ *
+ * So the exit code stays `0`. What this converts is a red build days later, in somebody else's
+ * change, into a line printed by the command that caused it.
+ */
+async function reportReferences(
+  root: string,
+  dir: string,
+  slug: string,
+  into: string,
+): Promise<void> {
+  // Every area a change may still be edited in. `history/` is absent by construction: an archived
+  // bundle is sealed and never re-checked, so a link inside one that points at a sibling is wrong
+  // from the moment it is archived and is deliberately not this tool's business.
+  const live = AREAS.map((a) => a.name);
+  const broken = await referencesInto(root, live, `${CHANGES}/${slug}`);
+  if (broken.length === 0) return;
+
+  info();
+  info(
+    `  ${amber('!')} ${broken.length} reference(s) now resolve to nothing — ${dim('nothing was rewritten')}`,
+  );
+  for (const reference of broken) {
+    info(`    ${dir}/${reference.file}:${reference.line}`);
+    info(`      ${dim(`${reference.target} → ${dir}/${into}/${slug}/`)}`);
+  }
 }
 
 function report(
