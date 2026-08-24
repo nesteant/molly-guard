@@ -1,7 +1,7 @@
 {
   "name": "mollyguard-workspace",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MollyGuard \u2014 your specification guardian.",
   "license": "MIT",
   "author": "Anton Nesterenko",

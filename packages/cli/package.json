@@ -1,6 +1,6 @@
 {
   "name": "mollyguard",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MollyGuard \u2014 specification lifecycle management from the command line.",
   "keywords": [
     "mollyguard",
@@ -48,8 +48,8 @@
     "prepack": "npm run build && cp ../../LICENSE . && cp ../../README.md ."
   },
   "dependencies": {
-    "@mollyguard/core": "^0.2.0",
-    "@mollyguard/store": "^0.2.0",
+    "@mollyguard/core": "^0.3.0",
+    "@mollyguard/store": "^0.3.0",
     "@inquirer/prompts": "^8.5.2"
   }
 }
