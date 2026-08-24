@@ -145,3 +145,14 @@
 {"node":"changes/0019-the-knowledge-base-is-read-back","at":"2026-08-24T09:51:14.690Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0019-the-knowledge-base-is-read-back","at":"2026-08-24T09:51:14.804Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0019-the-knowledge-base-is-read-back","at":"2026-08-24T09:51:14.924Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0020-a-command-s-help-is-about-the-command-it-was-asked-of","at":"2026-08-24T17:53:09.118Z","kind":"created","to":"draft","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0021-a-move-that-crosses-several-states-names-them","at":"2026-08-24T17:53:09.209Z","kind":"created","to":"draft","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0022-publishing-names-what-it-moved-out-from-under","at":"2026-08-24T17:53:09.299Z","kind":"created","to":"draft","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0023-a-corpus-arrives-with-a-place-for-the-project-s-own-rules","at":"2026-08-24T17:53:09.387Z","kind":"created","to":"draft","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T18:01:09.487Z","kind":"created","to":"draft","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0020-a-command-s-help-is-about-the-command-it-was-asked-of","at":"2026-08-24T18:14:49.012Z","kind":"transition","from":"draft","to":"review","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0020-a-command-s-help-is-about-the-command-it-was-asked-of","at":"2026-08-24T18:14:49.115Z","kind":"transition","from":"review","to":"approved","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0020-a-command-s-help-is-about-the-command-it-was-asked-of","at":"2026-08-24T18:14:49.214Z","kind":"transition","from":"approved","to":"in_progress","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0020-a-command-s-help-is-about-the-command-it-was-asked-of","at":"2026-08-24T18:32:55.009Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0020-a-command-s-help-is-about-the-command-it-was-asked-of","at":"2026-08-24T18:32:55.111Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0020-a-command-s-help-is-about-the-command-it-was-asked-of","at":"2026-08-24T18:32:55.205Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}

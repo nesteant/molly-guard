@@ -86,6 +86,34 @@ check "without needing a corpus"          0 "$VERSION" -- m version
 check "help lists what there is"          0 "molly init" -- m help
 check "an unknown command is a refusal"   1 "unknown command" -- m nonsense
 
+# ------------------------------------------------- what a command says when asked about itself
+#
+# Every assertion here runs *outside* a corpus, deliberately. `--help` is answered before the
+# corpus is located and before a flag is refused, because the caller asking what a command needs
+# is exactly the caller who has not set one up yet — and refusing a flag on the command that
+# exists to list the flags answers nothing.
+printf '\nhelp\n'
+check "a command answers for itself"      0 "--dry-run"        -- m publish --help
+refute "rather than printing the listing" "molly capability new" -- m publish --help
+check "molly help <command> is the same"  0 "--dry-run"        -- m help publish
+check "it names what the command refuses" 0 "disagrees with the ledger" -- m move --help
+check "a command with no refusals says so" 0 "molly status"    -- m status --help
+check "the bare listing is still the listing" 0 "molly agents" -- m help
+check "a bad flag does not pre-empt it"   0 "molly publish"    -- m publish --help --nonsense
+check "an unknown command gets the typo's message" 1 "unknown command" -- m frobnicate --help
+check "a hidden command still answers"    0 "molly version"    -- m help version
+refute "and stays out of the listing"     "molly version"      -- m help
+
+# Both directions over one table. A command in the listing that cannot describe itself is a gap
+# in the help; an entry that answers and is not listed is a command nobody can find.
+check "every listed command answers for itself" 0 "ok" -- sh -c '
+  for c in $(node "$BIN" help | sed -n "s/^  molly \([a-z]*\).*/\1/p" | sort -u); do
+    node "$BIN" "$c" --help | grep -q "^  molly $c" || { echo "$c does not answer"; exit 1; }
+  done
+  echo ok'
+check "and the listing holds every command but one" 0 "9" -- sh -c '
+  node "$BIN" help | sed -n "s/^  molly \([a-z]*\).*/\1/p" | sort -u | wc -l | tr -d " "'
+
 # ------------------------------------------------------------------------------- init
 printf '\ninit\n'
 check "it scaffolds a corpus"             0 "corpus initialised" -- m init
@@ -2319,6 +2347,63 @@ check "publish still refuses at the write"  1 "would be filed under no capabilit
   mkdir -p docs/changes/one/publish/specs/x
   printf -- "---\ntitle: X\nlang: en\n---\n\nB.\n" > docs/changes/one/publish/specs/x/spec.md
   node '"$BIN"' publish one'
+
+
+# ------------------------------------------- the refusals a command names in its help still fire
+#
+# `refuses:` is the one field in the command table that cannot be read off the source, so it is
+# the one that can drift into describing a refusal somebody removed. Each line is provoked here
+# and its exit code asserted: a help entry that has stopped being true fails the build rather
+# than becoming a false statement about the tool.
+printf '\n%s\n' "$(dim 'the refusals a help entry names')"
+
+fresh() { cd "$(mktemp -d)" || exit 2; node "$BIN" init >/dev/null 2>&1; }
+
+check "init: a second corpus here"          1 "a corpus is already here" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" init'
+check "capability: a title that loses words" 1 "reduce to nothing" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" capability new "Вхід через Entra ID"'
+check "change: a title that loses words"    1 "reduce to nothing" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "Вхід через Entra ID"'
+check "change: an unknown capability"       1 "no capability named" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a --capability nope'
+check "change: an unknown roadmap entry"    1 "nope" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a --realises nope'
+check "roadmap: a title that loses words"   1 "reduce to nothing" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" roadmap new "Вхід через Entra ID"'
+check "move: a state that is not one"       1 "is not a state" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  node "$BIN" move a nowhere'
+check "move: published is not recorded"     1 "reached by publishing" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  node "$BIN" move a published'
+check "move: a state: that disagrees"       1 "the ledger says" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  sed -i.bak "s/^state: draft/state: verified/" docs/changes/a/change.md
+  node "$BIN" move a review'
+check "publish: a state: that disagrees"    1 "the ledger says" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  sed -i.bak "s/^state: draft/state: verified/" docs/changes/a/change.md
+  node "$BIN" publish a'
+check "publish: no publish/ folder"         1 "carries no publish/" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  node "$BIN" publish a'
+check "publish: a payload that is empty"    1 "publishing nothing" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  mkdir -p docs/changes/a/publish; node "$BIN" publish a'
+check "publish: a name the policy would not mint" 1 "is not the name this corpus mints" -- sh -c '
+  '"$(declare -f fresh)"'; fresh
+  printf "\nnaming:\n  specs: %s\n" "'"'"'{ordinal:4}-{slug}'"'"'" >> mollyguard.yml
+  node "$BIN" capability new "Billing" --name billing >/dev/null
+  node "$BIN" change new "A" --name a --capability billing >/dev/null
+  mkdir -p docs/changes/a/publish/specs/retries
+  printf -- "---\ntitle: R\nlang: en\ncapability: billing\n---\n\nB.\n" > docs/changes/a/publish/specs/retries/spec.md
+  node "$BIN" publish a'
+check "publish: filed under no capability"  1 "would be filed under no capability" -- sh -c '
+  '"$(declare -f fresh)"'; fresh; node "$BIN" change new "A" --name a >/dev/null
+  mkdir -p docs/changes/a/publish/specs/x
+  printf -- "---\ntitle: X\nlang: en\n---\n\nB.\n" > docs/changes/a/publish/specs/x/spec.md
+  node "$BIN" publish a'
 
 
 printf '\n'
