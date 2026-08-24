@@ -3,7 +3,7 @@ title: An existing corpus receives what a later version writes
 lang: en
 kind: feature
 capability: the-corpus
-state: deployed
+state: published
 alters:
   - specs/finding-the-corpus
 ---

@@ -184,3 +184,4 @@
 {"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T19:14:35.228Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T19:14:35.340Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T19:14:35.446Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T19:15:23.301Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
