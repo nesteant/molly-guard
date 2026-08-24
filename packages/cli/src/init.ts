@@ -20,12 +20,34 @@
  * it is on each invocation.
  */
 
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { join, posix, relative } from 'node:path';
 import { ROOT_README, STATE_README, allDirectories, readmeFor } from '@mollyguard/core';
-import { CONFIG_FILE, HISTORY_FILE, README_FILE, STATE_DIR, corpusAt, place } from '@mollyguard/store';
+import {
+  ATTRIBUTES_FILE,
+  CONFIG_FILE,
+  HISTORY_FILE,
+  LEDGER_MERGE,
+  README_FILE,
+  STATE_DIR,
+  corpusAt,
+  place,
+} from '@mollyguard/store';
 import { agentsCommand } from './agents';
 import { amber, bold, dim, fail, green, info, teal } from './ui';
+
+const ATTRIBUTES = `# The transition ledger is append-only, and two branches that each advanced a change have
+# both appended at the end of it. Without this, that is a conflict on every merge — git cannot
+# know that two additions at the same position are both wanted. With it, both lines survive.
+#
+# Union merge is only ever safe for a file whose lines are independent facts and whose order
+# carries no meaning beyond "this happened". That is exactly what this ledger is, and it is why
+# nothing else in the corpus gets that treatment: two edits to a specification are a
+# disagreement somebody has to resolve, and silently keeping both would be the wrong answer.
+#
+# The pattern is relative to this file, so it is correct wherever the corpus lives.
+${LEDGER_MERGE}
+`;
 
 const CONFIG = (root: string, lang: string): string => `# MollyGuard corpus configuration.
 #
@@ -96,6 +118,11 @@ export async function initCommand(
   // be written again from anything.
   await put(HISTORY_FILE, '');
 
+  // The ledger is append-only, so two branches that each advanced a change conflict at the end of
+  // it without this. Written beside the corpus rather than at the repository root, which keeps it
+  // ours and keeps the pattern relative to whatever `root:` says.
+  await put(ATTRIBUTES_FILE, ATTRIBUTES);
+
   await put(README_FILE, ROOT_README(dir));
   await put(posix.join(STATE_DIR, README_FILE), STATE_README);
 
@@ -120,6 +147,16 @@ export async function initCommand(
   // Named, not counted. A count tells somebody a file of theirs was met and leaves them to find
   // which — and the whole point of keeping it was that they already had something there worth
   // more than the explainer this would have written over it.
+  // A `.gitattributes` somebody else wrote is theirs, and is left byte-identical. But a corpus
+  // whose ledger has no union merge will conflict on the first parallel branch, so the missing
+  // line is named rather than added — the same posture `molly agents --check` takes. It does not
+  // fail: a corpus that will conflict later is not a failed initialisation.
+  let unmerged = false;
+  if (kept.includes(`${dir}/${ATTRIBUTES_FILE}`)) {
+    const existing = await readFile(join(root, ATTRIBUTES_FILE), 'utf8').catch(() => '');
+    unmerged = !existing.includes(LEDGER_MERGE);
+  }
+
   if (kept.length > 0) {
     info(`  ${amber('!')} ${kept.length} file(s) were already here, and were left as they are`);
     for (const path of kept) info(`    ${dim(path)}`);
@@ -127,6 +164,10 @@ export async function initCommand(
     // The ledger is named on its own, because the remedy below would destroy it. An explainer
     // is prose nothing reads and is free to replace; a history is the one file in a corpus that
     // cannot be written again from anything else.
+    if (unmerged) {
+      info(dim(`    ${ATTRIBUTES_FILE} is yours — add this line, or the ledger conflicts on the first parallel branch:`));
+      info(dim(`      ${LEDGER_MERGE}`));
+    }
     if (kept.includes(`${dir}/${HISTORY_FILE}`)) {
       info(dim('    a corpus was here before this one — its record is kept, and is never deleted'));
     }

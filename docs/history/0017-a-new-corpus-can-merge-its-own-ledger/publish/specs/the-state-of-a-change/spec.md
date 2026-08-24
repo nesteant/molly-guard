@@ -80,27 +80,6 @@ carry the pattern, the run names the line to add and still exits `0`. Repairing 
 configuration unasked is the write this tool exists to prevent, and a corpus that will conflict
 later is not a failed initialisation.
 
-**A ledger node with no bundle is reported.** The record remembers a change the directories no
-longer hold — removed by hand, or renamed with `mv` — and `molly status` and `molly move` both say
-so. It is the other half of a bundle the ledger has never heard of, and the half that produces a
-*wrong* answer rather than a missing one: the fold for whatever replaced it starts from no events
-and answers `draft` with confidence it has not earned.
-
-Neither half fails a build. A corpus somebody reorganised by hand is not broken — its record and
-its directories disagree — and failing would make silencing the tool the first thing anybody does.
-Where one `mv` produces both findings, the report says so, and it never guesses which bundle an
-orphan became: a same-titled match is a heuristic, and offering one would be the tool inventing a
-rename nobody performed.
-
-A published change is not an orphan. Its events stay under `changes/<name>` while its bundle moves
-to `history/<name>`, so the archive is read to answer this — a check that scanned only what is in
-flight would report every correct publication as a defect.
-
-**Any later feature that moves a node teaches this check**, and `molly rename` is the first. The
-event model admits `created` and `transition` and nothing else, so a rename needs a new kind, a
-reader that accepts a line carrying no state, and a clause that stops treating a renamed node as
-gone. All three land together, or the rename ships a corpus that reports every rename as a defect.
-
 The change document carries `state:` in its frontmatter, and that is a **projection** of the
 ledger, not a second answer to the same question. Only the entry carries it; the other three
 documents of a bundle have none.

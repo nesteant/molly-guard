@@ -89,27 +89,6 @@ the report is an area that cannot be seen. `roadmap/` was that area: the corpus 
 *read while planning*, and it was the one directory no command showed. Its entries now appear in
 the table and in `--json`, read the same way capabilities are.
 
-**`specs/` and `decisions/` were the same failure, in the area that matters most.** `molly publish`
-filled them and no command looked at either again — so a corpus with eight specifications in it
-could be asked what was in flight and never what was *true*. Publishing the first specification in
-a fresh corpus and then running `molly status --json` produced a document that mentioned it zero
-times.
-
-That is this rule aimed at the tool's own subject. A corpus is a claim that what you are reading is
-what is true; a tool that cannot say what it holds is making that claim about something it has not
-looked at. The base now appears in the table and in `--json`: specifications grouped by the
-capability each declares, because that is how a slice is read, and decisions listed apart and
-ungrouped, because a decision is found by whatever it constrains.
-
-**Reading it back is what makes the references checkable**, and both arrive with the scan. A
-published specification filed under a capability that has gone is reported and **fails** — truth
-that is present and unreachable is worse than absent, because absence is visible, and it is the
-same severity the in-flight check already carries. A change whose `alters:` names a document that
-is not there is reported and **does not fail**: the document may be arriving in that very change,
-so the tool cannot tell a typo from a plan, and saying so on every run is the whole remedy. Before
-this, `--alters specs/loging-in` was accepted at creation, survived publication, and was never
-mentioned again.
-
 A listing that omits an area without saying so is worse than no listing, because it is *believed*.
 Somebody planning against the report concludes nothing was intended and drafts a change that
 contradicts an entry sitting in the corpus.

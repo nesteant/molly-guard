@@ -124,3 +124,25 @@ export function stateOf(events: readonly LifecycleEvent[], node: string): State 
 export function isRecorded(events: readonly LifecycleEvent[], node: string): boolean {
   return events.some((event) => event.node === node);
 }
+
+/**
+ * Every node the ledger has heard of, in the order it first heard of them.
+ *
+ * The other half of `isRecorded`: that answers whether the record knows a bundle, this answers
+ * what the record knows that no bundle answers to. A ledger node with no document is a change
+ * removed or renamed outside the tool, and until something asks this question the events sit
+ * there addressing nothing while every command exits `0`.
+ *
+ * First-seen order rather than sorted, because the ledger's order is the order things happened
+ * and a report that re-sorts it invents a sequence nothing recorded.
+ */
+export function nodesIn(events: readonly LifecycleEvent[]): readonly string[] {
+  const seen = new Set<string>();
+  const nodes: string[] = [];
+  for (const event of events) {
+    if (seen.has(event.node)) continue;
+    seen.add(event.node);
+    nodes.push(event.node);
+  }
+  return nodes;
+}

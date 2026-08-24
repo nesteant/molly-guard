@@ -7,6 +7,7 @@
  * absent as far as every check is concerned, and nothing downstream will ever mention it.
  */
 
+export * from './base';
 export * from './bundle';
 export * from './config';
 export * from './capability';

@@ -1,7 +1,7 @@
 {
   "name": "@mollyguard/core",
-  "version": "0.1.0",
-  "description": "MollyGuard's engine: the areas, the notation, the lifecycle. Pure — no filesystem, no network, no clock.",
+  "version": "0.2.0",
+  "description": "MollyGuard's engine: the areas, the notation, the lifecycle. Pure \u2014 no filesystem, no network, no clock.",
   "keywords": [
     "mollyguard",
     "specification",

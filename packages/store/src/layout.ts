@@ -14,6 +14,25 @@ export const CONFIG_FILE = 'mollyguard.yml';
 export const HISTORY_FILE = `${STATE_DIR}/history.jsonl`;
 
 /**
+ * Git attributes for the corpus, and the one pattern that goes in them.
+ *
+ * **Inside the corpus, not at the repository root.** Git reads a `.gitattributes` in any
+ * directory and applies it to that directory and below, so the pattern is relative to the corpus
+ * and one string is correct for every `root:`. That is also what keeps this the tool's own file:
+ * `decisions/the-tool-writes-only-what-it-owns` permits two kinds of file outside the corpus and
+ * says there is no third, and a repository-root `.gitattributes` would have been it.
+ *
+ * **Union merge is safe here and nowhere else.** Two branches that each advanced a change have
+ * both appended at the end of the ledger, and git cannot know both additions are wanted. That
+ * resolution is correct only for a file whose lines are independent facts and whose order carries
+ * no meaning beyond *this happened*. Two edits to a specification are a disagreement somebody has
+ * to resolve, and keeping both sides would be the wrong answer — so the pattern names one file
+ * rather than a directory.
+ */
+export const ATTRIBUTES_FILE = '.gitattributes';
+export const LEDGER_MERGE = `${HISTORY_FILE} merge=union`;
+
+/**
  * The name of the file a directory explains itself in.
  *
  * Nothing reads it. Every directory carries one because git tracks no empty directory, so a

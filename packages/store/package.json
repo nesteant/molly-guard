@@ -1,6 +1,6 @@
 {
   "name": "@mollyguard/store",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Filesystem adapter for a MollyGuard corpus: reads and writes documents, bundles and the transition ledger.",
   "keywords": [
     "mollyguard",
@@ -42,7 +42,7 @@
     "prepack": "npm run build && cp ../../LICENSE ."
   },
   "dependencies": {
-    "@mollyguard/core": "^0.1.0",
+    "@mollyguard/core": "^0.2.0",
     "yaml": "^2.6.1"
   }
 }

@@ -40,6 +40,8 @@ import {
   TERMINAL,
   directionOf,
   isState,
+  nodesIn,
+  qualify,
   selectableChanges,
   selectableStates,
   stateOf,
@@ -48,6 +50,7 @@ import {
 import {
   Corpus,
   appendEvent,
+  readArchivedChanges,
   readChanges,
   readHistory,
   writeDeclaredState,
@@ -75,6 +78,25 @@ export async function moveCommand(corpus: Corpus, options: MoveOptions): Promise
 
   const history = await readHistory(root);
   for (const line of history.unreadable) warn(dim(line));
+
+  // Said before acting, because `move` is where a wrong state does damage. A node the ledger
+  // remembers and no bundle answers to means a change was renamed or removed outside the tool —
+  // and the fold for whatever replaced it starts from nothing, answering `draft` with confidence
+  // it has not earned. Reported and never refused: the corpus is not broken, its record and its
+  // directories disagree, and the person about to move something should know that.
+  //
+  // Only in-flight bundles are scanned here, so a published change would read as an orphan. Its
+  // events stay under `changes/<name>` while its bundle sits in `history/`, which is why this
+  // asks the archive too.
+  const archivedHere = await readArchivedChanges(root);
+  const known = new Set([
+    ...scanned.bundles.map((bundle) => bundle.node),
+    ...archivedHere.bundles.map((bundle) => qualify(CHANGES, bundle.slug)),
+  ]);
+  for (const node of nodesIn(history.events)) {
+    if (known.has(node)) continue;
+    warn(dim(`the ledger has events for ${node}, which has no bundle`));
+  }
 
   const choices: readonly MoveChoice[] = selectableChanges(
     scanned.bundles.map((bundle) => ({

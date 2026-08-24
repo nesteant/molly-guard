@@ -2092,6 +2092,235 @@ check "a slice names every change against it" 0 "changes/first, changes/second" 
   node '"$BIN"' status'
 
 
+printf '\n%s\n' "$(dim 'a new corpus can merge its own ledger')"
+
+# The assertion that matters is a real merge. A pattern at the wrong path, or relative to the
+# wrong directory, writes a .gitattributes that looks right and does nothing — which is the
+# failure this exists to remove, one level up.
+merged() {
+  cd "$(mktemp -d)" || exit 2
+  git init -q; git config user.email t@t; git config user.name t
+  node "$BIN" "$@" >/dev/null 2>&1
+  node "$BIN" change new "A" --name a >/dev/null 2>&1
+  node "$BIN" change new "B" --name b >/dev/null 2>&1
+  git add -A >/dev/null; git commit -qm base
+  git checkout -qb fa; node "$BIN" move a review >/dev/null 2>&1; git commit -qam a
+  git checkout -q -; git checkout -qb fb; node "$BIN" move b review >/dev/null 2>&1; git commit -qam b
+  git checkout -q fa; git merge fb -m m >/dev/null 2>&1
+}
+check "two branches advancing merge clean" 0 "ok" -- sh -c '
+  '"$(declare -f merged)"'; merged init
+  grep -q "<<<<" docs/.mollyguard/history.jsonl && { echo "the ledger conflicted"; exit 1; }
+  echo ok'
+check "and both events survive"            0 "ok" -- sh -c '
+  '"$(declare -f merged)"'; merged init
+  grep -q "changes/a" docs/.mollyguard/history.jsonl &&
+  grep -q "changes/b" docs/.mollyguard/history.jsonl && echo ok || echo "an event was lost"'
+# A pattern relative to the repository root passes the first test and fails this one.
+check "and it holds at another root"       0 "ok" -- sh -c '
+  '"$(declare -f merged)"'; merged init --root kb
+  grep -q "<<<<" kb/.mollyguard/history.jsonl && { echo "the ledger conflicted"; exit 1; }
+  echo ok'
+check "the file is the corpus's own"       0 ".mollyguard/history.jsonl merge=union" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init --root kb >/dev/null
+  cat kb/.gitattributes'
+refute "and nothing lands at the repository root" ".gitattributes" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  ls -a | grep gitattributes || true'
+# Theirs the moment it exists. Reported, never repaired — the same posture --check takes.
+check "one already there is left alone"    0 "# ours" -- sh -c '
+  cd "$(mktemp -d)" && mkdir -p docs && printf "# ours\n" > docs/.gitattributes
+  node '"$BIN"' init >/dev/null
+  cat docs/.gitattributes'
+check "and the missing line is named"      0 "merge=union" -- sh -c '
+  cd "$(mktemp -d)" && mkdir -p docs && printf "# ours\n" > docs/.gitattributes
+  node '"$BIN"' init'
+check "and that is not a failure"          0 "corpus initialised" -- sh -c '
+  cd "$(mktemp -d)" && mkdir -p docs && printf "# ours\n" > docs/.gitattributes
+  node '"$BIN"' init'
+# The correct case is not remarked on: a tool that reports success trains people to skim.
+refute "the right one is not remarked on"  "merge=union" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init'
+# Union is for the ledger and nothing else. A specification edited on two branches is a
+# disagreement somebody has to resolve, and keeping both sides would be the wrong answer.
+check "a document still conflicts"         0 "ok" -- sh -c '
+  cd "$(mktemp -d)" || exit 2
+  git init -q; git config user.email t@t; git config user.name t
+  node '"$BIN"' init >/dev/null
+  printf -- "---\ntitle: T\nlang: en\n---\n\nbase\n" > docs/capabilities/t.md
+  git add -A >/dev/null; git commit -qm base
+  git checkout -qb x; printf "x\n" >> docs/capabilities/t.md; git commit -qam x
+  git checkout -q -; git checkout -qb y; printf "y\n" >> docs/capabilities/t.md; git commit -qam y
+  git checkout -q x; git merge y -m m >/dev/null 2>&1
+  grep -q "<<<<" docs/capabilities/t.md && echo ok || echo "union leaked past the ledger"'
+
+
+printf '\n%s\n' "$(dim 'the ledger names a change that is gone')"
+
+renamed_away() {
+  cd "$(mktemp -d)" || exit 2
+  node "$BIN" init >/dev/null
+  node "$BIN" change new "A" --name a >/dev/null
+  mv docs/changes/a docs/changes/after
+}
+# One `mv` is two findings, and only one of them was reported before this. The other is the one
+# that produces a *wrong* answer: the fold for `after` starts from nothing and says `draft`.
+check "a renamed bundle is still reported"  0 "the ledger has no record of: after" -- sh -c '
+  '"$(declare -f renamed_away)"'; renamed_away
+  node '"$BIN"' status'
+check "and the events left behind are too"  0 "has events for changes/a, which has no bundle" -- sh -c '
+  '"$(declare -f renamed_away)"'; renamed_away
+  node '"$BIN"' status'
+check "and they read as one problem"        0 "renamed by hand" -- sh -c '
+  '"$(declare -f renamed_away)"'; renamed_away
+  node '"$BIN"' status'
+# Reported, never failed. A corpus somebody reorganised by hand is not broken — its record and its
+# directories disagree — and failing would make silencing the tool the first thing anybody does.
+check "and the corpus stays clean"          0 '"ok": true' -- sh -c '
+  '"$(declare -f renamed_away)"'; renamed_away
+  node '"$BIN"' status --json'
+# `move` is where a wrong state does damage, so it says so before acting — and still acts.
+check "move says so before acting"          0 "which has no bundle" -- sh -c '
+  '"$(declare -f renamed_away)"'; renamed_away
+  node '"$BIN"' move after review'
+check "and performs the move anyway"        0 "draft → review" -- sh -c '
+  '"$(declare -f renamed_away)"'; renamed_away
+  node '"$BIN"' move after review'
+# Independent findings. A rendering that assumes they arrive together would pass a test that only
+# ever produced them together.
+check "a deleted change orphans on its own" 0 "which has no bundle" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' change new "A" --name a >/dev/null
+  rm -rf docs/changes/a
+  node '"$BIN"' status'
+refute "and reports no missing record"      "the ledger has no record of" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' change new "A" --name a >/dev/null
+  rm -rf docs/changes/a
+  node '"$BIN"' status'
+# The way this gets written wrongly: a published change keeps its events under `changes/<name>`
+# while its bundle moves to `history/<name>`, so a check that only scans what is in flight reports
+# every correct publication as an orphan.
+refute "a published change is not an orphan" "which has no bundle" -- sh -c '
+  '"$(declare -f planned)"'; planned
+  node '"$BIN"' publish archive >/dev/null
+  node '"$BIN"' status'
+refute "and move does not say so either"    "which has no bundle" -- sh -c '
+  '"$(declare -f planned)"'; planned
+  node '"$BIN"' publish archive >/dev/null
+  node '"$BIN"' change new "B" --name b >/dev/null
+  node '"$BIN"' move b review'
+refute "an empty ledger orphans nothing"    "which has no bundle" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' status'
+# The repair that must never exist is one line from the check that must.
+check "and the check writes nothing"        0 "ok" -- sh -c '
+  '"$(declare -f renamed_away)"'; renamed_away
+  before=$(md5 -q docs/.mollyguard/history.jsonl 2>/dev/null || md5sum docs/.mollyguard/history.jsonl)
+  node '"$BIN"' status >/dev/null
+  after=$(md5 -q docs/.mollyguard/history.jsonl 2>/dev/null || md5sum docs/.mollyguard/history.jsonl)
+  [ "$before" = "$after" ] && echo ok || echo "status rewrote the ledger"'
+
+
+printf '\n%s\n' "$(dim 'the knowledge base is read back')"
+
+# The fixture is the adopter path, because that is where the gap was found: init, a capability,
+# a change, publish — then ask the tool what is true.
+based() {
+  cd "$(mktemp -d)" || exit 2
+  node "$BIN" init >/dev/null
+  node "$BIN" capability new "Billing" --name billing >/dev/null
+  node "$BIN" change new "One" --name one --capability billing >/dev/null
+  mkdir -p docs/changes/one/publish/specs/invoices
+  printf -- '---\ntitle: Invoices\nlang: en\ncapability: billing\n---\n\nBody.\n' \
+    > docs/changes/one/publish/specs/invoices/spec.md
+  node "$BIN" publish one >/dev/null
+}
+check "a published specification is named"  0 "invoices" -- sh -c '
+  '"$(declare -f based)"'; based
+  node '"$BIN"' status'
+check "under the capability it declares"    0 "the knowledge base" -- sh -c '
+  '"$(declare -f based)"'; based
+  node '"$BIN"' status'
+# The measurement that started this change: `status --json` contained the string `specs` zero
+# times in a corpus with a published specification in it.
+check "and a reader that is not a person"   0 '"area": "specs"' -- sh -c '
+  '"$(declare -f based)"'; based
+  node '"$BIN"' status --json'
+check "a decision is listed too"            0 "in force" -- sh -c '
+  '"$(declare -f based)"'; based
+  printf -- "---\ntitle: A rule\nlang: en\n---\n\nBody.\n" > docs/decisions/a-rule.md
+  node '"$BIN"' status'
+# The area is not read by slice, so a rendering that grouped one would invent a rule the corpus
+# has not got.
+refute "and carries no capability"          '"capability"' -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  printf -- "---\ntitle: A rule\nlang: en\ncapability: ghost\n---\n\nBody.\n" > docs/decisions/a-rule.md
+  node '"$BIN"' status --json'
+# A heading over nothing reads as a broken query.
+refute "an empty base says nothing"         "the knowledge base" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' status'
+
+# The check that was aimed at half the corpus, and the half it could not see is the permanent one.
+check "a published spec filed nowhere fails" 1 "specs/invoices is filed under billing" -- sh -c '
+  '"$(declare -f based)"'; based
+  rm docs/capabilities/billing.md
+  node '"$BIN"' status'
+
+# Accepted at creation, survived publication, never mentioned — for every version until now.
+check "a misspelled alters is reported"     0 "alters specs/invoces" -- sh -c '
+  '"$(declare -f based)"'; based
+  node '"$BIN"' change new "Two" --name two --alters specs/invoces >/dev/null
+  node '"$BIN"' status'
+# It must not fail: the document may be arriving in this very change.
+check "and does not fail the corpus"        0 '"ok": true' -- sh -c '
+  '"$(declare -f based)"'; based
+  node '"$BIN"' change new "Two" --name two --alters specs/invoces >/dev/null
+  node '"$BIN"' status --json'
+refute "one that resolves is not remarked on" "alters specs/invoices, which is not" -- sh -c '
+  '"$(declare -f based)"'; based
+  node '"$BIN"' change new "Two" --name two --alters specs/invoices >/dev/null
+  node '"$BIN"' status'
+# The finished shape of the link, exactly as with --realises.
+refute "an archived change is not asked"    "alters specs/invoces" -- sh -c '
+  '"$(declare -f based)"'; based
+  node '"$BIN"' change new "Two" --name two --capability billing --alters specs/invoces >/dev/null
+  mkdir -p docs/changes/two/publish/specs/two
+  printf -- "---\ntitle: Two\nlang: en\ncapability: billing\n---\n\nBody.\n" > docs/changes/two/publish/specs/two/spec.md
+  node '"$BIN"' publish two >/dev/null
+  node '"$BIN"' status'
+
+# A listing that drops what it could not read vouches for a corpus it has not seen.
+check "a broken record is reported"         0 "specs/invoices" -- sh -c '
+  '"$(declare -f based)"'; based
+  printf -- "---\ntitle: [unclosed\n---\n\nBody.\n" > docs/specs/invoices/spec.md
+  node '"$BIN"' status'
+check "and its neighbours still appear"     0 "ok" -- sh -c '
+  '"$(declare -f based)"'; based
+  mkdir -p docs/specs/other && printf -- "---\ntitle: Other\nlang: en\ncapability: billing\n---\n\nB.\n" > docs/specs/other/spec.md
+  printf -- "---\ntitle: [unclosed\n---\n\nBody.\n" > docs/specs/invoices/spec.md
+  node '"$BIN"' status | grep -q "other" && echo ok || echo "a neighbour was dropped"'
+# Present and readable by a person; only the record is broken.
+check "and that does not fail"              0 '"ok": true' -- sh -c '
+  '"$(declare -f based)"'; based
+  printf -- "---\ntitle: [unclosed\n---\n\nBody.\n" > docs/specs/invoices/spec.md
+  node '"$BIN"' status --json'
+# A stray file in specs/ is a specification nothing will ever read.
+check "a file where folders belong is named" 0 "holds folders" -- sh -c '
+  '"$(declare -f based)"'; based
+  printf "loose\n" > docs/specs/loose.md
+  node '"$BIN"' status'
+
+# The refusal at the write fires at the last recoverable moment and is not replaced by a report.
+check "publish still refuses at the write"  1 "would be filed under no capability" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' change new "One" --name one >/dev/null
+  mkdir -p docs/changes/one/publish/specs/x
+  printf -- "---\ntitle: X\nlang: en\n---\n\nB.\n" > docs/changes/one/publish/specs/x/spec.md
+  node '"$BIN"' publish one'
+
+
 printf '\n'
 if [[ $FAIL -eq 0 ]]; then
   printf '%s %s\n' "$(green '✓')" "$PASS assertion(s) passed"

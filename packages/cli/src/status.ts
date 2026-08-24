@@ -25,11 +25,13 @@ import {
   State,
   TERMINAL,
   isRecorded,
+  nodesIn,
   qualify,
   stateOf,
 } from '@mollyguard/core';
 import {
   Corpus,
+  readBase,
   readCapabilities,
   readChanges,
   readHistory,
@@ -40,6 +42,10 @@ import { amber, bold, dim, info, red, teal, warn } from './ui';
 
 /** What a change filed under nothing shows. Blank would read as a rendering that failed. */
 const UNFILED = '—';
+
+/** The two publishable areas, named here because the rendering groups one and not the other. */
+const SPECS = 'specs';
+const DECISIONS = 'decisions';
 
 export interface StatusOptions {
   readonly json: boolean;
@@ -59,6 +65,8 @@ export interface Finding {
     | 'drift'
     | 'dangling-capability'
     | 'unrecorded'
+    | 'orphaned'
+    | 'dangling-alters'
     | 'realised-roadmap'
     | 'dangling-roadmap';
   /** The change it is about, where it is about one. */
@@ -120,6 +128,22 @@ export interface Report {
     readonly name: string;
     readonly title: string;
   }[];
+  /**
+   * What the knowledge base holds: the specifications in force and the decisions that bind.
+   *
+   * Here because a report that omits an area is believed, and this is the area the whole product
+   * exists to protect. Somebody who has published ten changes could not ask what the base held
+   * without opening the directory, which made the tool silent about its own subject.
+   *
+   * A decision carries no capability — the area is not read by slice — and the field is absent
+   * rather than null, the rule the rest of this document keeps.
+   */
+  readonly base: readonly {
+    readonly area: string;
+    readonly name: string;
+    readonly title: string;
+    readonly capability?: string;
+  }[];
   readonly changes: readonly ReportedChange[];
   readonly findings: readonly Finding[];
 }
@@ -158,6 +182,7 @@ async function gather(root: string, dir: string): Promise<Report> {
   const grouping = await readCapabilities(root);
   const intended = await readRoadmap(root);
   const history = await readHistory(root);
+  const base = await readBase(root);
 
   const findings: Finding[] = [];
 
@@ -189,6 +214,10 @@ async function gather(root: string, dir: string): Promise<Report> {
     ...grouping.unreadable,
     ...intended.unreadable,
     ...history.unreadable,
+    // The base joins them, and does not fail. A published document whose record will not parse is
+    // present and readable by a person; only the frontmatter is broken, and it is still listed —
+    // a listing that drops what it could not read vouches for a corpus it has not seen.
+    ...base.unreadable,
   ]) {
     findings.push({ kind: 'unreadable', message, fails: false });
   }
@@ -277,6 +306,72 @@ async function gather(root: string, dir: string): Promise<Report> {
     });
   }
 
+  // The other half of a `mv`, and the half that produces a *wrong* answer rather than a missing
+  // one. A bundle the ledger has never heard of is reported above; the events left addressing the
+  // old name are reported here, because until something asks this question they sit in the record
+  // pointing at nothing while every run exits 0.
+  //
+  // Every node, not only in-flight ones: a published change keeps its events under
+  // `changes/<name>` while its bundle moves to `history/<name>`, so the archived scan is what
+  // stops every correct publication reading as an orphan.
+  //
+  // Nothing here guesses which bundle an orphan became. A same-titled match is a heuristic, and
+  // offering one would be the tool inventing a rename nobody performed — the report says what is
+  // true and leaves the remedy where it belongs.
+  const present = new Set(changes.map((change) => change.node));
+  for (const node of nodesIn(history.events)) {
+    if (present.has(node)) continue;
+    findings.push({
+      kind: 'orphaned',
+      message: `the ledger has events for ${node}, which has no bundle`,
+      fails: false,
+    });
+  }
+
+  // A published specification filed under a capability that has gone.
+  //
+  // The same check the in-flight listing makes, finally pointed at the half of the corpus that is
+  // permanent — and it fails for the same reason: a specification nothing points at is truth that
+  // is present and unreachable, which is worse than absent, because absence is visible.
+  //
+  // Only where the area is read by capability. A decision declares none and is found by whatever
+  // it constrains, so asking would be inventing a rule the corpus has not got.
+  for (const document of base.documents) {
+    if (document.capability === undefined) continue;
+    if (known.has(document.capability)) continue;
+    findings.push({
+      kind: 'dangling-capability',
+      message: `${document.node} is filed under ${document.capability}, which does not exist`,
+      fails: true,
+    });
+  }
+
+  // `alters:` resolved, at last.
+  //
+  // It was left unresolved while `specs/` and `decisions/` were empty, because a check that passes
+  // for want of anything to fail it is indistinguishable from one that does not work. There is
+  // something to check against now.
+  //
+  // Reported and not failed: the document may be arriving in this very change, or in one still in
+  // flight, so the tool cannot tell a typo from a plan. Saying so every run is the whole remedy —
+  // before this, `--alters specs/loging-in` was accepted at creation, survived publication, and
+  // was never mentioned again.
+  //
+  // In-flight only. An archived change naming a document since removed is the finished shape of
+  // the link, and reporting it would turn every correct publication into a finding.
+  const filed = new Set(base.documents.map((document) => document.node));
+  for (const bundle of inFlight.bundles) {
+    for (const target of bundle.record.alters) {
+      if (filed.has(target)) continue;
+      findings.push({
+        kind: 'dangling-alters',
+        change: bundle.slug,
+        message: `${bundle.slug} alters ${target}, which is not in the knowledge base`,
+        fails: false,
+      });
+    }
+  }
+
   // The plan and the corpus, asked whether they still agree.
   //
   // What the plan and the knowledge base can be asked, and what they can never be asked.
@@ -311,6 +406,12 @@ async function gather(root: string, dir: string): Promise<Report> {
     ok: !findings.some((finding) => finding.fails),
     capabilities: grouping.capabilities.map((c) => ({ name: c.slug, title: c.record.title })),
     roadmap: intended.entries.map((e) => ({ name: e.slug, title: e.record.title })),
+    base: base.documents.map((d) => ({
+      area: d.area,
+      name: d.slug,
+      title: d.title,
+      ...(d.capability === undefined ? {} : { capability: d.capability }),
+    })),
     changes,
     findings,
   };
@@ -337,6 +438,39 @@ function render(report: Report, dir: string): void {
     info(`  ${dim('roadmap')}       ${report.roadmap.map((e) => e.name).join(', ')}`);
   }
 
+  // The knowledge base, which is the thing the rest of this report is in service of. Under the
+  // capabilities because that is how it is read: a specification declares its grouping, so the
+  // listing shows the slice a reader would take. Decisions after, ungrouped, because one is found
+  // by whatever it constrains rather than by reading a slice.
+  //
+  // Nothing is printed when the base is empty. A heading over nothing reads as a broken query, and
+  // "nothing has been published" is already what the change listing says.
+  const specs = report.base.filter((d) => d.area === SPECS);
+  const decided = report.base.filter((d) => d.area === DECISIONS);
+  if (specs.length > 0 || decided.length > 0) {
+    info();
+    info(`  ${dim('the knowledge base')} ${dim(`— ${specs.length} specification(s), ${decided.length} decision(s)`)}`);
+    // Widths per area rather than across both: one long decision name would otherwise stretch
+    // every specification line to match it, which is a column of whitespace pretending to be
+    // alignment.
+    const specWidth = Math.max(1, ...specs.map((d) => d.name.length));
+    for (const group of [...new Set(specs.map((d) => d.capability ?? UNFILED))].sort()) {
+      info(`    ${teal(group)}`);
+      for (const document of specs.filter((d) => (d.capability ?? UNFILED) === group)) {
+        info(`      ${document.name.padEnd(specWidth)}  ${dim(document.title)}`);
+      }
+    }
+    if (decided.length > 0) {
+      // Labelled, because an ungrouped block under a list of capabilities reads as one more
+      // capability with no name. A decision is not filed under one and must not appear to be.
+      info(`    ${amber('in force')} ${dim('— constraints, found by what they bind')}`);
+      const width = Math.max(1, ...decided.map((d) => d.name.length));
+      for (const document of decided) {
+        info(`      ${document.name.padEnd(width)}  ${dim(document.title)}`);
+      }
+    }
+  }
+
   if (report.changes.length === 0) {
     // Only the ones from `changes/`, which are exactly the failing ones. A capability that will
     // not load is worth reporting and is not a change — saying "1 change could not be read" over
@@ -352,6 +486,17 @@ function render(report: Report, dir: string): void {
     }
     // An empty table with headings reads as a broken query. Say the corpus is empty, and say
     // what puts something in it.
+    //
+    // **Unless the ledger disagrees.** A corpus whose changes were all deleted has no bundles and
+    // a record that remembers them, and "nothing has been published" is then a false statement
+    // made by the one command whose job is to be true. So the findings are printed first and the
+    // sentence is only claimed when there is nothing to contradict it.
+    const remembered = report.findings.filter((finding) => finding.kind === 'orphaned');
+    if (remembered.length > 0) {
+      info(`${dim(`${remembered.length} ledger node(s) have no bundle`)} — every change here was removed`);
+      for (const finding of remembered) info(`    ${dim(finding.message)}`);
+      return;
+    }
     info(`${dim('no changes yet')} — nothing is in flight, and nothing has been published`);
     info(dim(`  molly change new "<title>"`));
     return;
@@ -437,6 +582,24 @@ function render(report: Report, dir: string): void {
     info(`  ${dim(`${realised.length} roadmap slice(s) have changes published against them`)}`);
     for (const finding of realised) info(`    ${dim(finding.message)}`);
     info();
+  }
+
+  // Reported every run, never failed. The document may be arriving in this very change, so this
+  // cannot tell a typo from a plan — but before it existed, neither could anybody else.
+  const unresolved = listing('dangling-alters');
+  if (unresolved.length > 0) {
+    info(`  ${dim(`${unresolved.length} change(s) alter something not in the knowledge base`)}`);
+    for (const finding of unresolved) info(`    ${dim(finding.message)}`);
+  }
+
+  const gone = listing('orphaned');
+  if (gone.length > 0) {
+    info(`  ${dim(`${gone.length} ledger node(s) have no bundle`)}`);
+    for (const finding of gone) info(`    ${dim(finding.message)}`);
+    // One `mv` produces both findings, and reading them apart is what makes them hard to act on.
+    if (listing('unrecorded').length > 0) {
+      info(dim('    a directory renamed by hand shows as both — move it back, or accept the split record'));
+    }
   }
 
   const orphaned = listing('dangling-roadmap');
