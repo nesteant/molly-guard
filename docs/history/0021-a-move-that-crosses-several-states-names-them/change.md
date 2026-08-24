@@ -3,7 +3,7 @@ title: A move that crosses several states names them
 lang: en
 kind: feature
 capability: the-change-flow
-state: deployed
+state: published
 alters:
   - specs/the-state-of-a-change
   - specs/what-a-command-may-never-do-silently
