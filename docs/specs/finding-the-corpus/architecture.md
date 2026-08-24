@@ -57,13 +57,34 @@ The order in `bin.ts` is the design, and each step is before the next because be
 be a worse message:
 
 ```
---help            asked for, so answered rather than validated
+--version         asked for, and answerable when everything else is broken
+--help            asked for, so answered rather than validated — for the command it was asked of
 checkFlags        a flag refused while refusing is still free — after a write it is an apology
 unknown command   `molly frobnicate` gets a typo's message, not a corpus's
 init              creates rather than finds, so it never searches
 locate            once, for everything else
 readConfig        problems refuse here, before any command has run
 ```
+
+**`--help` resolves to a command before it renders.** `molly help` with nothing after it is the
+listing; `molly help <name>` and `molly <name> --help` are one entry; a name that is no command
+falls through to the unknown-command message rather than growing a second refusal of its own. All
+of it sits above `checkFlags`, which is why an unknown flag alongside `--help` does not pre-empt
+the answer.
+
+**`COMMANDS` is one record per command, and it is one table because three surfaces read it.** The
+listing renders `usage` and `summary`; `checkFlags` reads `flags`; `--help` renders all of it plus
+`refuses`. They were two tables — an ordered array of usage-and-summary pairs, and a record of flag
+names — keyed by the same names in two shapes, and the per-command knowledge the dispatcher held
+was a flag array with no words in it. That gap is why `molly publish --help` printed the listing.
+
+`hidden` keeps `version` out of the listing and still answerable, because it is a flag people type
+rather than a verb worth teaching — and denying that it is a command when asked would be a
+different kind of wrong.
+
+**`refuses` is the field that can drift**, and it is the only one not derivable from the source: a
+refusal is a `fail()` deep in a command rather than something the table could read. So it names
+refusals rather than describing them, and the harness provokes every line.
 
 `OUTSIDE` holds the commands that do not act on a corpus. It is a set holding one id — `agents` —
 and it is a set because the next command to be added has to answer *does this act on a corpus*
@@ -88,6 +109,7 @@ survive a migration.
 
 Sixteen assertions in `scripts/smoke.sh` under `finding the corpus`, and five more under `init`
 where the file's own location is asserted — all against real corpora in temporary directories.
+Eleven more under `help`, and fourteen under `the refusals a help entry names`.
 
 **Where the file is**, under `init` — above the corpus, saying `root: docs`, recording the
 language, *not* inside the corpus, and naming the directory `--root` asked for. The middle one is
@@ -104,6 +126,16 @@ pointing at a corpus that is not at `docs/`.
 
 **What is not about a corpus** — `agents` in an uninitialised repository, and an unknown command
 answered before anything is located.
+
+**What a command says of itself**, every assertion of it run outside a corpus deliberately: an
+entry that is not the listing, the same answer through `molly help <command>`, a refusal named in
+it, an unknown flag failing to pre-empt it, and a typo still getting the typo's message. Both
+directions over the table too — every listed command answers for itself, and the listing holds
+every command but the hidden one.
+
+**The refusals a help entry names**, each provoked and its exit code asserted. This is the half
+that keeps the field honest: the text is written by hand because it cannot be derived, so the only
+thing standing between it and a false claim about the tool is that the claim is executed.
 
 **The silent fallback**, which is the one that matters: a configuration that will not parse is
 refused and names the line, *and does not report an empty corpus*. It exited `0` over a corpus it

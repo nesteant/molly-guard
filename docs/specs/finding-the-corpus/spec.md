@@ -51,6 +51,36 @@ nesting mean anything rather than merely be permitted.
 What this narrows, knowingly: two corpora can no longer sit side by side in one directory. That
 was possible before only because the marker was the corpus, and nobody wanted it.
 
+# What can be answered without a corpus is answered without one
+
+Three questions are answered before anything is located, and each is a question whose asker may
+have no corpus at all.
+
+```
+molly --version            which build is on the PATH
+molly help                 what the commands are
+molly <command> --help     what that command takes, and what it refuses
+```
+
+**`--help` is about the command it was asked of.** `molly publish --help` prints publish's own
+entry — its usage, the flags it takes, and the refusals it makes — rather than the listing the
+caller already had. `molly help <command>` is the same answer through the other door.
+
+That it works outside a corpus is the point rather than a convenience: **the caller asking what a
+command needs is exactly the caller who has not set one up yet.** So is the ordering against the
+flag check — `molly publish --help --nonsense` answers, because refusing an unknown flag on the
+command that exists to list the flags answers nothing.
+
+**A name that is not a command gets the message a typo deserves.** `molly frobnicate --help` is
+refused as an unknown command, not answered with an empty entry, and not answered with *no corpus
+here* — the same argument the location order already makes.
+
+**The entry is assembled from the table the dispatcher reads**, so a command cannot describe itself
+into disagreement with what it accepts. The one part that cannot be derived is what a command
+*refuses*, since a refusal is a branch rather than a declaration — so those are named rather than
+described, and each one is provoked by the suite. A line about a refusal somebody removed fails the
+build instead of becoming a false statement about the tool.
+
 # A configuration that cannot be read is refused before any command runs
 
 It is read once, centrally, and a file that will not parse stops the run and names the line.
@@ -98,6 +128,11 @@ own](../agent-instructions/spec.md), and the set is short because that answer is
 **An unknown command is refused before anything is located.** Answering *no corpus here* to
 `molly frobnicate` answers a question nobody asked, and sends its reader to look for a corpus when
 what they have is a typo.
+
+**A command describes itself from the same table that dispatches it.** There is one record per
+command, holding what the listing prints, what the flag check allows, and what `--help` answers.
+Three surfaces reading one structure cannot disagree; three tables would be two chances to forget,
+and the gap between the first two is where `molly publish --help` printing the listing came from.
 
 # What is deliberately left undone
 

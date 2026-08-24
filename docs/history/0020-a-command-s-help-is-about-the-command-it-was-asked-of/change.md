@@ -3,7 +3,7 @@ title: A command's help is about the command it was asked of
 lang: en
 kind: feature
 capability: the-corpus
-state: deployed
+state: published
 alters:
   - specs/finding-the-corpus
 ---
