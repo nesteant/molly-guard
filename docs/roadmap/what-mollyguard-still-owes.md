@@ -160,7 +160,88 @@ for an index problem.
 capability. It becomes a finding once a corpus is old enough that an empty grouping means a
 boundary nobody uses — a judgement about size the tool does not have.
 
+**Seven proposals arrived from the first adopting repository and six are refused.** They share an
+origin worth naming: each was written after an agent session went wrong — a document appended to
+instead of rewritten, a filed specification edited by hand, frontmatter invented, a plan naming an
+identifier belonging to a different application. In every case a person reading caught it, at the
+moment it was cheapest to fix, for nothing. **A proposal whose only evidence is one session's
+mistake that a person caught for free is describing the session rather than the tool**, and the
+answer to that class is the text an agent reads before it writes, never a check the engine runs
+after it.
+
+**Unanswered questions do not become first-class again.** The ask was a gate on `in_progress →
+implemented`, and a content-hash comparison of a change's documents across it. That mechanism was
+built and removed before 0.2.0 and the reasoning is published in [instructions any agent can
+read](../specs/agent-instructions/spec.md): a question is text, so a question appearing and being
+answered is a diff, and git records it with author, timestamp and surroundings. The re-derivation
+also rests on a premise the source disproves — nothing in this tool hashes anything — and the signal
+it proposes fires on the healthy case, because documents unchanged between approval and
+implementation are what a change that survived contact with the code looks like. The refusable move
+that would let a project enforce a gate of its own is feature 8 above; this is one of its customers
+and not a request for it. What survives is a heading: `change.md` carries what the documents do not
+answer, so a change that is unresolved is unresolved on its face.
+
+**No finding compares one document's frontmatter with its neighbours'.** Consistency with the
+majority is the wrong oracle. The first document in an area has nothing to compare against, the
+second makes the first the standard, and every later addition — `tracker:`, `superseded_by:` — is
+reported until enough documents carry it to become the majority: it fires on the evolution it should
+permit and goes quiet once a wrong shape has spread. The case that prompted it is already handled on
+purpose, in that a missing `title:` falls back to the name, because what was written fastest is what
+a reader most needs listed. What was owed instead is a closed list of the keys the tool writes,
+which is a sentence in a scaffold and not a check.
+
+**Nothing reports a filed document that stopped matching what published it.** The comparison is
+available — `history/` holds a byte-frozen copy — and it is refused for what it would make `history/`
+into. An archived bundle is sealed and never re-checked, and a check reading every archive on every
+run makes `molly status` cost the age of the corpus rather than the work in flight, which is the
+exact property feature 7 exists to remove. The refusal at publish asked for alongside it is the shape
+already rejected for link repair: it would make editing a document somebody else left behind a
+precondition for publishing your own. A hand edit is a commit touching a governed path with no
+publication behind it, which is a question about git, and this tool reads git once to ask who you
+are. What was owed is the positive form of the rule — where a correction goes — because an agent
+holding a correction needs a destination rather than a prohibition.
+
+**The clause about a payload's links moves rather than being added where it was asked for.** The
+ask was a consequence appended to the mirror mapping in the area explainer, and that is the wrong
+surface: the explainer is read once at the start of a session, and a link is written while a payload
+is. It is one line in `molly-publish` instead — *its links are written for where the document lands,
+not for where the file sits* — which makes it a placement rule beside the others rather than a note
+about a checker's false positive. The false positive itself stays somebody else's: it belongs to a
+checker walking `docs/` without knowing the mirror, and the wrong repair it fears is already named
+by `molly publish` at the moment it fires.
+
+**`molly context` gains no second caller before its own question is answered.** Folding a change's
+four documents and its `alters:` targets into one result was measured at about 5% of one publishing
+session, against a feature whose unit — documents or tokens — is open in feature 3 above. Widening a
+design before its own question is settled is how this slice came to be seven slices. The
+measurement's finding stands and is not this: cost scales with round trips, and its two largest
+recoveries were an agent reading a command's semantics before walking them by hand, and a session
+launched in the corpus root.
+
+**The seventh is the one that is right, and it generalises past what it asked for.** `change.md` was
+leaking construction detail because the tool partitions the four documents by subject — what and why
+here, how there — and *why* absorbs every architectural argument truthfully. A subject is something a
+writer classifies, and classifying one's own prose is the judgement both people and agents make
+differently every time. A reader is not: *would this reader need it* has an answer. That is the shape
+the scaffolds owe every document they open, and it is what the other six were each asking for one
+symptom at a time.
+
 # What is done
+
+## 0.3.1 — a document the tool opens says who it is for
+
+**`0025-a-document-the-tool-opens-says-who-it-is-for`** — the four documents were partitioned by
+subject, and a subject is something a writer classifies. Each template now opens by naming the
+reader it is written for and where a sentence that fails that reader goes instead; `change.md`
+carries *What is not settled*; the templates and `molly-new` say that revising is rewriting;
+`molly-corpus` states how a correction reaches a filed document as an action rather than a
+prohibition; and `molly-corpus` and `molly-publish` state the frontmatter a document carries as a
+closed list rather than as agreement with its neighbours.
+
+Not one of it is checked, and the harness asserts that: an open question under the new heading is
+neither a finding nor a refusal. It is the answer to six proposals that each asked for a check, and
+the reason it is a different answer rather than a smaller one is above.
+
 
 ## 0.2.0 — a corpus can be run from `init` to a formed knowledge base
 

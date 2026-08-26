@@ -7,6 +7,17 @@ and why, `plan.md` how it will be built, `tasks.md` the work in order, and `test
 will prove it. Only `change.md` carries a frontmatter record — a title repeated in four files
 is a title that disagrees with itself by the end of the week.
 
+**Each is written for a different reader, and the reader is what settles where a sentence goes** —
+`change.md` for somebody deciding whether the work should happen at all, who will not open the
+codebase; `plan.md` for whoever will build it; `tasks.md` for whoever picks it up part-done;
+`tests.md` for whoever has to believe the claim afterwards. A subject is something a writer
+classifies and a reader is something they can ask, which is why the documents say who theirs is.
+A sentence that fails one document's reader belongs to another's; it is moved, not dropped.
+
+**They state what is in force, not how they came to say it.** A change corrected later is
+rewritten as though it had always said the new thing — git and the ledger hold the history, and a
+document that holds it too gives a reviewer two accounts and no way to choose.
+
 A change has a state, in this sequence:
 
 ```

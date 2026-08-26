@@ -17,5 +17,8 @@ draft → review → approved → in_progress → implemented → verified → d
 Backwards is allowed and is how work reopens. Never hand-write `state:` in a document — the
 command writes it, and a document disagreeing with the ledger is refused.
 
+A change whose `change.md` still holds a question under *What is not settled* is not one to
+approve. Nothing refuses the move; the answer is written into the document it belongs in first.
+
 The terminal state is not reachable this way. When the work is done and the documents are
 written, publish instead.

@@ -10,7 +10,9 @@ description: Write what a change puts into the knowledge base, then publish it
 1. Read the change's four documents, and the knowledge-base documents it alters.
 2. Write `docs/changes/<change>/publish/`, mirroring the corpus. Each file is the **whole** new
    version of the document at that path — never a delta, never an append. A new specification
-   carries its `spec.md`, and its `architecture.md` where the design is worth keeping.
+   carries its `spec.md`, and its `architecture.md` where the design is worth keeping. Its
+   frontmatter is `title`, `lang` and, in `specs/`, `capability` — nothing else. Its links
+   are written for where the document lands, not for where the file sits.
 3. **A decision is rare.** Write `publish/decisions/<name>.md` only for a rule a check enforces
    and that binds work not yet done; a rule the specification already states belongs there, not
    in a second document. It records no history — the archived change does — so whoever reviews

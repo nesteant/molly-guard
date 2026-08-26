@@ -185,3 +185,6 @@
 {"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T19:14:35.340Z","kind":"transition","from":"implemented","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T19:14:35.446Z","kind":"transition","from":"verified","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0024-an-existing-corpus-receives-what-a-later-version-writes","at":"2026-08-24T19:15:23.301Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0025-a-document-the-tool-opens-says-who-it-is-for","at":"2026-08-25T21:49:59.855Z","kind":"created","to":"draft","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0025-a-document-the-tool-opens-says-who-it-is-for","at":"2026-08-25T22:05:24.028Z","kind":"transition","from":"draft","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0025-a-document-the-tool-opens-says-who-it-is-for","at":"2026-08-25T22:05:32.263Z","kind":"transition","from":"verified","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}

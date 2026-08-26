@@ -306,6 +306,42 @@ refute "no format is imposed by the template" "given:" -- sh -c '
 refute "and no keyword form either"          "SHALL" -- sh -c '
   cat docs/changes/declares-nothing/*.md'
 
+# What they *do* carry is placement. Partitioning the four documents by subject asks an author to
+# classify their own prose, and *why* absorbs every architectural argument truthfully — so each
+# opens by naming the reader it is written for instead. Still not a format: the engine reads
+# nothing below the frontmatter, which is what the two refutations above hold.
+check "every document names its reader"        0 "ok" -- sh -c '
+  miss=""
+  for file in docs/changes/declares-nothing/*.md; do
+    grep -q "^Written for" "$file" || miss="$miss [$file]"
+  done
+  [ -z "$miss" ] || { printf "%s\n" "$miss"; exit 1; }
+  echo ok'
+# Told only what may not go in a document, an author deletes the material instead of moving it —
+# which loses the reasoning rather than relocating it, and is invisible where a leak is not.
+check "and names where a sentence goes instead" 0 "belongs in" -- \
+  cat docs/changes/declares-nothing/change.md
+# The whole of what is left of the removed question log: a heading, no command, no ledger event,
+# no hash. An answer is recorded by rewriting the document it belongs in, so there is no second
+# place for one to sit in — which is the problem that machinery existed to solve.
+check "a change arrives with somewhere to ask"  0 "What is not settled" -- \
+  cat docs/changes/declares-nothing/change.md
+check "and says an answer is written back"      0 "rewriting the document it belongs in" -- \
+  cat docs/changes/declares-nothing/change.md
+# Revising is rewriting, said in the document where striking-through actually happens.
+check "the work list is rewritten, not struck"  0 "deleted rather than struck through" -- \
+  cat docs/changes/declares-nothing/tasks.md
+
+# A place to write, never a field to satisfy. A change holding an unanswered question is not a
+# finding, is not refused, and moves like any other — the assertion that fails if the check an
+# adopting corpus asked for is ever built.
+refute "an open question is not a finding"      "not settled" -- sh -c '
+  node '"$BIN"' change new "Holds a question" --name holds-a-question --capability reporting >/dev/null
+  printf "\nWhich database?\n" >> docs/changes/holds-a-question/change.md
+  node '"$BIN"' status'
+check "and nothing refuses the move"            0 "review" -- sh -c '
+  node '"$BIN"' move holds-a-question review'
+
 # ------------------------------------------------------------------------ capabilities
 printf '\ncapabilities\n'
 
@@ -326,6 +362,8 @@ refute "nothing about it reaches the ledger" "capabilities/" -- cat docs/.mollyg
 # The same pair a change bundle carries. They fail the moment somebody adds a helpful example.
 refute "no format is imposed"                "given:" -- cat docs/capabilities/billing.md
 refute "and no keyword form either"          "SHALL"  -- cat docs/capabilities/billing.md
+# And the same reader line every document the tool opens carries.
+check "it names its reader"                  0 "Written for" -- cat docs/capabilities/billing.md
 
 check "a name can be chosen instead"      0 "capabilities/short" -- sh -c '
   node '"$BIN"' capability new "Some other grouping" --name short'
@@ -2578,6 +2616,11 @@ printf '\n%s\n' "$(dim 'publishing names what it moved out from under')"
 
 # One change referencing another, plus a link that stays valid, an external one, and one that was
 # already broken before this ran. Only the first is this publication's doing.
+#
+# The expected line number tracks the length of the `change.md` template, because the links are
+# appended to a freshly created bundle. A template edit moves it, and this is the assertion that
+# says so — the alternative, asserting the path without the line, would stop checking the half
+# that makes the report actionable.
 pointed() {
   scratch
   node "$BIN" capability new "Billing" --name billing >/dev/null 2>&1
@@ -2593,7 +2636,7 @@ pointed() {
   printf -- "---\ntitle: X\nlang: en\ncapability: billing\n---\n\nBody.\n" > docs/changes/one/publish/specs/x/spec.md
 }
 
-check "a live change pointing at it is named"  0 "changes/two/change.md:19" -- sh -c '
+check "a live change pointing at it is named"  0 "changes/two/change.md:32" -- sh -c '
   '"$(declare -f scratch); $(declare -f pointed)"'; pointed; node "$BIN" publish one'
 check "with the target and where it went"      0 "../one/change.md → docs/history/one/" -- sh -c '
   '"$(declare -f scratch); $(declare -f pointed)"'; pointed; node "$BIN" publish one'

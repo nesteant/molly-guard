@@ -90,7 +90,9 @@ export const SKILLS: readonly Skill[] = [
 ${CORPUS}
 
 \`docs/specs/\` and \`docs/decisions/\` are the knowledge base: what the product is currently
-believed to be. **Nothing enters it except by publishing a change.** Never edit them directly.
+believed to be. **Nothing enters it except by publishing a change.** Never edit them directly: to
+correct one, copy it into \`docs/changes/<change>/publish/\` at the same path and edit the copy —
+the only route a sentence takes into a filed document, and the whole record that anybody agreed.
 
 \`molly help\` lists the commands. Exit codes: \`0\` clean, \`1\` a refusal, \`2\` a defect in the tool.
 
@@ -127,12 +129,15 @@ molly publish <change> [--dry-run]
   patch, no merge of two texts. To change a specification, write the new version of it entire.
 - **\`publish/\` mirrors the corpus**, and the path is the whole instruction. A new specification
   must carry its \`spec.md\`; a decision is one file at \`publish/decisions/<name>.md\`.
-- **A decision is rare**, and is a live constraint rather than a record — only a rule a check
-  enforces and that binds work not yet done. History is \`history/\` and the ledger, so a decision
-  doing no work is deleted rather than kept.
+- **A decision is rare** — a live constraint, never a record: only a rule a check enforces that
+  binds work not yet done. History is \`history/\` and the ledger, so one doing no work is deleted.
 - **Never** edit \`docs/.mollyguard/history.jsonl\`, and never hand-write \`state:\` — \`molly move\`
   writes it, and a document disagreeing with the ledger is refused.
 - **One claim per change.** A second claim is a second change.
+- **Each of the four documents names the reader it is written for**, and that reader settles
+  where a sentence goes: one its reader would not need moves to the document whose reader would.
+- **Frontmatter is a closed record.** A change's is written by \`molly change new\`; a published
+  document carries \`title\`, \`lang\`, and \`capability\` in \`specs/\`. Never a key to match a neighbour.
 - \`published\` is reached only by \`molly publish\`, never by \`molly move\`.
 `,
   },
@@ -145,26 +150,26 @@ molly publish <change> [--dry-run]
 
 ${CORPUS}
 
-1. \`molly status\` for the capabilities and what \`docs/roadmap/\` already intends —
-   contradicting a slice there is an argument somebody has later. Read \`docs/decisions/\`, and
-   \`docs/conventions.md\` if it is there: that is how *this* repository writes, and it wins.
+1. \`molly status\` for the capabilities and what \`docs/roadmap/\` already intends — contradicting
+   a slice is an argument somebody has later. Read \`docs/decisions/\`, and \`docs/conventions.md\`
+   if it is there: that is how *this* repository writes, and it wins.
 2. **If the work is in a roadmap slice, read it first** — the \`molly-roadmap\` skill acts on one.
 3. \`molly change new "<title>" --capability <name>\`, with \`--alters specs/<name>\` per document
    it changes and \`--realises <slice>\` where a slice already intends it.
-4. Fill in all four documents. \`change.md\` states one claim and why; \`plan.md\` how it will be
-   built; \`tasks.md\` the work in order; \`tests.md\` what would have to be observed for the
-   claim to be believed.
+4. Fill in all four. Each opens with the reader it is for, and that reader settles where a
+   sentence goes: \`change.md\` for whoever decides the work should happen at all, \`plan.md\` for
+   whoever builds it, \`tasks.md\` for whoever picks it up part-done, \`tests.md\` for whoever must
+   believe it after. One its reader would not need moves to the document whose reader would.
 5. Write in the corpus's language, from \`lang:\` in \`mollyguard.yml\`.
 6. **Never guess at what the documents do not answer.** Write the unknown into \`change.md\` under
-   its own heading and stop — locally, ask; unattended, exit non-zero. Nothing in the tool refuses
-   a change for holding one, and nothing needs to: an unresolved change is one nobody approves.
+   *What is not settled* and stop — locally, ask; unattended, exit non-zero. Nothing in the tool
+   refuses a change for holding one: an unresolved change is one nobody approves. An answer is
+   recorded by rewriting the document it belongs in and deleting the question.
 
-One claim per change; a second claim is a second change.
-
-Mark a standing constraint in \`plan.md\` only where a check enforces it and it binds work not yet
-done. Most changes leave none, and saying so is the answer — restating the design is not a
-constraint, and a marker is a proposal whoever reviews may drop. Report the change's name and
-what is still empty. Do not move it — that is the next step.
+One claim per change; a second claim is a second change. **Revising is rewriting** — a change
+corrected later says what is in force now, as though it had always said it: no correction block,
+no dated addition, no struck-through task. Report the change's name and what is still empty. Do
+not move it — that is the next step.
 `,
   },
   {
@@ -186,6 +191,9 @@ draft → review → approved → in_progress → implemented → verified → d
 Backwards is allowed and is how work reopens. Never hand-write \`state:\` in a document — the
 command writes it, and a document disagreeing with the ledger is refused.
 
+A change whose \`change.md\` still holds a question under *What is not settled* is not one to
+approve. Nothing refuses the move; the answer is written into the document it belongs in first.
+
 The terminal state is not reachable this way. When the work is done and the documents are
 written, publish instead.
 `,
@@ -202,7 +210,9 @@ ${CORPUS}
 1. Read the change's four documents, and the knowledge-base documents it alters.
 2. Write \`docs/changes/<change>/publish/\`, mirroring the corpus. Each file is the **whole** new
    version of the document at that path — never a delta, never an append. A new specification
-   carries its \`spec.md\`, and its \`architecture.md\` where the design is worth keeping.
+   carries its \`spec.md\`, and its \`architecture.md\` where the design is worth keeping. Its
+   frontmatter is \`title\`, \`lang\` and, in \`specs/\`, \`capability\` — nothing else. Its links
+   are written for where the document lands, not for where the file sits.
 3. **A decision is rare.** Write \`publish/decisions/<name>.md\` only for a rule a check enforces
    and that binds work not yet done; a rule the specification already states belongs there, not
    in a second document. It records no history — the archived change does — so whoever reviews
