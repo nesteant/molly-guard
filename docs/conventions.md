@@ -99,6 +99,12 @@ in any document. The first two are filled only by `molly publish`; the third is 
 is the ledger; the fifth is a projection of it, and a document disagreeing with the ledger is
 refused.
 
+**`docs/history/` is also not read while work is being drafted or built**, and that is the tool's
+rule rather than this repository's — the explainer the archive carries states it and says where to
+go instead. It is repeated here only because *sealed* used to mean editing alone, which is the
+smaller half: an archived change is a retired shape the corpus still keeps, and copying one
+forward looks like diligence while it happens.
+
 The generated files under `.agents/`, `.claude/` and the other tool roots are outputs of
 `molly agents` and are not edited either — change `packages/core/src/scaffold.ts` and reinstall.
 `npm run molly -- agents --check` says whether they are current.

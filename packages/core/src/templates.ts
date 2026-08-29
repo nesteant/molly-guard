@@ -97,6 +97,12 @@ The order is the part that matters — it is the difference between a list of wo
 for doing it. Each item should deliver something this change declares. When the plan changes the
 list is rewritten: a task that is no longer wanted is deleted rather than struck through, because
 git holds what it used to say and a list holding both is one nobody can act on.
+
+**The payload is not a task.** \`publish/\` holds the documents this change puts into the
+knowledge base, and it is written after the work is done, by \`molly publish\`'s own step — what
+the change publishes is described in \`plan.md\` and turned into documents at the end. A payload
+written during the work is written before the work can say what it is, and it makes every path
+the change's prose names have to resolve weeks before the documents it names are filed.
 `,
 
   tests: `Written for whoever has to believe the claim afterwards. An item belongs here only if somebody

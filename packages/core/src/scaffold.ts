@@ -106,6 +106,10 @@ the only route a sentence takes into a filed document, and the whole record that
    and where the two differ it wins.
 4. \`lang:\` in \`mollyguard.yml\` — write all document prose in that language.
 
+**And \`docs/history/\` is closed.** An archived change is a retired shape the corpus still keeps:
+what is in force is \`docs/specs/\` and \`docs/decisions/\`, what exists is what \`molly status\`
+lists, what is intended is \`docs/roadmap/\`.
+
 ## The flow
 
 \`\`\`
@@ -166,10 +170,10 @@ ${CORPUS}
    refuses a change for holding one: an unresolved change is one nobody approves. An answer is
    recorded by rewriting the document it belongs in and deleting the question.
 
-One claim per change; a second claim is a second change. **Revising is rewriting** — a change
-corrected later says what is in force now, as though it had always said it: no correction block,
-no dated addition, no struck-through task. Report the change's name and what is still empty. Do
-not move it — that is the next step.
+One claim per change; a second is a second change. **Revising is rewriting** — a change corrected
+later says what is in force now, as though it had always said it: no correction block, no dated
+addition, no struck-through task. **The payload is never a task**: \`publish/\` is written last,
+by \`molly-publish\`. Report the name and what is empty; do not move it — that is next.
 `,
   },
   {
@@ -193,6 +197,11 @@ command writes it, and a document disagreeing with the ledger is refused.
 
 A change whose \`change.md\` still holds a question under *What is not settled* is not one to
 approve. Nothing refuses the move; the answer is written into the document it belongs in first.
+
+**Implementation works from the change's own four documents.** The knowledge base was read while
+it was drafted and \`plan.md\` is what that produced. A plan that turns out to be wrong is not
+edited from inside the work: move the change back, rewrite it there, move it forward again. A
+*published* specification found wrong is a new change.
 
 The terminal state is not reachable this way. When the work is done and the documents are
 written, publish instead.

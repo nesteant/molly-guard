@@ -124,7 +124,51 @@ before the viewer changes, so governance moves first while readers stay where th
 
 Largest and least urgent. **Needs 4**, which is the same projection rendered for a terminal.
 
-## Still undecided, and not features until they are
+### 12. `alters:` can be corrected, and the refusal names the right cause
+
+Two halves, and the smaller one is a defect. `molly status` reports `second alters thing, which is
+not in the knowledge base` when the document *is* in the base and is listed four lines above in the
+same output — the field wanted `specs/thing` and the message describes a missing document rather
+than a missing prefix, which sends the reader to look for something that is sitting there. That is
+the failure this corpus already published a specification about, in its own report.
+
+The larger half is that **`alters:` is the one field whose true value is usually not known when the
+change is created**, and `molly change new` is the only thing that writes it. A change drafted
+expecting to publish a decision and then finding it has to correct a specification has no route
+except a hand edit of a closed record, which is the one operation `molly-corpus` tells an agent not
+to perform — so the correct move and the permitted move are different moves. The field is not
+load-bearing at publish time, which is what makes this a claim with no way to keep it true.
+
+Found in the first adopting repository against `0004-sign-in-with-entra-id`, and reproduced against
+0.3.2. **The message is the urgent half**; the correction route is a design question — whether it is
+a flag on `move`, a second command, or a re-read at publish — and it should not be answered by
+widening `change new`.
+
+## 13. The reasoning behind a line of code is reachable from it
+
+`molly why <path>[:<line>]` — the change or changes behind that code and what they argued, joined
+from the ledger and read out of `history/` on the tool's own behalf.
+
+**This is the other side of `0026` and arrives with it.** The archive is closed to an agent
+because reading a retired change is how a retired shape gets copied forward. It is not closed to
+the tool that sealed it, and the difference is the whole point: a question with a current answer
+gets the current answer, and *why does this line exist* has no current answer anywhere else. A
+plan is archived on publication day, so "the argument lives in the change" is a rule that loses the
+argument the moment the change succeeds.
+
+The evidence is not a session that went wrong. It is that the workaround is measurable and
+ratchets: in the first adopting repository the code carries the argument instead, one file is 45%
+comment and another was 53%, and the instruction that produced it — match the density of the
+surrounding code — makes each generation match the last. The join already exists, because the
+link from a commit to a change is derived rather than declared.
+
+**Needs 7**, which decides what an archive holds; and it must read commits and never their
+messages, which is settled. Two weaker forms were considered and are worth recording as not the
+answer: keeping published changes in the working tree, which puts a second copy where greps find
+it; and a warning at publish time naming reasoning no published document repeats, which depends on
+somebody reading a warning about a document they are finished with.
+
+# Still undecided, and not features until they are
 
 **Undoing a publication.** Entering the terminal state is closed; leaving it is not. Today the
 remedy is `git checkout`, which works because every effect is a file. The candidates are a refusal
@@ -218,6 +262,38 @@ measurement's finding stands and is not this: cost scales with round trips, and 
 recoveries were an agent reading a command's semantics before walking them by hand, and a session
 launched in the corpus root.
 
+**A corpus does not declare the repositories a project spans.** Asked for as one field in
+`mollyguard.yml`, so a product reading a corpus could learn what else is worked on with it from the
+checkout rather than from its own database. The alternatives it weighs against are real and it
+picks the better of them — but the comparison leaves out what the field would make this tool.
+Every key that file holds is read by a command here: `root:` is how the corpus is found, `lang:` is
+what documents are written in, `naming:` is how a name is minted. **No command would read this
+one.** A configuration key the tool never reads is a registry entry for somebody else's product,
+kept in this tool's file, going stale with nothing here able to notice — which is the failure this
+product exists to prevent, arriving in the one file that says where the corpus is. What repositories
+a project spans is a property of the project; the reading product owns it, or it goes in a file that
+product owns beside the corpus. `naming:` is not the precedent it is claimed to be: a naming policy
+is something every `molly` command has to obey.
+
+**Enforcing the archive seal is not this tool's, and the adopter's own hook is the right owner.**
+The eighth proposal asked `molly init` to write a `PreToolUse` hook refusing reads of `history/`,
+and the settings entry that wires it. Its evidence is the strongest any proposal has arrived with —
+the seal was breached by the session auditing for that class of defect, sweeping archived task
+lists as its method — and the refusal is about scope rather than about the evidence. Three things
+are already published and each one alone is decisive. **A settings file is not written, anywhere**:
+that was built, and removed on the argument that a tool adding itself to the file deciding what
+runs without being asked has approved itself — and a hook nobody wires does nothing, so shipping
+one means either writing that file or shipping an inert script. **There are two kinds of file this
+tool writes outside a corpus and there is no third**, asserted by the harness on every run; an
+executable that runs inside somebody's agent session is a third. And **nothing verifies that the
+instructions were followed** — a hook is exactly that verification, and the tool approves nothing,
+here as everywhere. What was owed is the rule itself, which was genuinely missing: `history/` was
+sealed against editing and against re-checking and silent about reading. That shipped as `0026`.
+The instrument stays with the project, in the harness the project controls, removable in a file
+somebody reviews — which is what `docs/conventions.md` is for, and where that repository's working
+hook already lives. `changes/0027` is the ledger node where this was drafted before it was
+withdrawn.
+
 **The seventh is the one that is right, and it generalises past what it asked for.** `change.md` was
 leaking construction detail because the tool partitions the four documents by subject — what and why
 here, how there — and *why* absorbs every architectural argument truthfully. A subject is something a
@@ -227,6 +303,31 @@ the scaffolds owe every document they open, and it is what the other six were ea
 symptom at a time.
 
 # What is done
+
+## 0.3.2 — a phase names what it reads, and an install says what it did not update
+
+**`0026-a-phase-names-what-it-works-from-and-what-it-leaves-closed`** — every rule these
+instructions carried fired in front of somebody writing, and reading was unbound. The archive is
+now closed in the `history/` explainer and in `molly-corpus`, with the destination in the same
+breath; `molly-advance` says what implementation works from, that a plan found wrong moves the
+change back rather than being edited in place, and that a published specification found wrong is a
+new change; the `tasks.md` template and `molly-new` say the payload is not a task. The reference
+skill's cap moved from sixty to sixty-four, and the argument for moving it is published rather than
+assumed: a body loads only once a model has decided the work is ours, so those lines are weighed
+against the archived bundle they stop it loading.
+
+Nothing is checked, and the harness asserts that too — reading `history/` still fails nothing.
+
+**`0028-an-install-names-a-file-whose-text-this-version-changed`** — `molly init` said *it already
+had everything this version writes* from `existsSync` alone, and printed it over an explainer
+holding the previous release's text. `place()` gains a third outcome, the report names the path and
+still keeps the file, and the sentence now claims only what existence establishes. Three files are
+excluded because for them differing is the healthy case: `conventions.md` is an invitation, the
+attributes file has its own remedy, and the ledger holds data.
+
+**Feature 1 is not this**, and stays open. That one is about a `molly-*` directory a later version
+no longer produces, which `--check` calls current because it never looks; this is about a file that
+is still written and whose text moved.
 
 ## 0.3.1 — a document the tool opens says who it is for
 

@@ -188,3 +188,14 @@
 {"node":"changes/0025-a-document-the-tool-opens-says-who-it-is-for","at":"2026-08-25T21:49:59.855Z","kind":"created","to":"draft","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0025-a-document-the-tool-opens-says-who-it-is-for","at":"2026-08-25T22:05:24.028Z","kind":"transition","from":"draft","to":"verified","by":"nesteant <nesterenko.anton@gmail.com>"}
 {"node":"changes/0025-a-document-the-tool-opens-says-who-it-is-for","at":"2026-08-25T22:05:32.263Z","kind":"transition","from":"verified","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0026-a-phase-names-what-it-works-from-and-what-it-leaves-closed","at":"2026-08-29T10:01:21.391Z","kind":"created","to":"draft","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0027-the-tool-writes-the-guard-and-the-project-switches-it-on","at":"2026-08-29T10:01:36.952Z","kind":"created","to":"draft","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0028-an-install-names-a-file-whose-text-this-version-changed","at":"2026-08-29T10:01:37.085Z","kind":"created","to":"draft","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0026-a-phase-names-what-it-works-from-and-what-it-leaves-closed","at":"2026-08-29T10:06:21.152Z","kind":"transition","from":"draft","to":"in_progress","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0028-an-install-names-a-file-whose-text-this-version-changed","at":"2026-08-29T10:14:46.820Z","kind":"transition","from":"draft","to":"in_progress","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0026-a-phase-names-what-it-works-from-and-what-it-leaves-closed","at":"2026-08-29T10:25:29.301Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0028-an-install-names-a-file-whose-text-this-version-changed","at":"2026-08-29T10:25:29.428Z","kind":"transition","from":"in_progress","to":"implemented","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0026-a-phase-names-what-it-works-from-and-what-it-leaves-closed","at":"2026-08-29T10:27:09.389Z","kind":"transition","from":"implemented","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0028-an-install-names-a-file-whose-text-this-version-changed","at":"2026-08-29T10:27:10.113Z","kind":"transition","from":"implemented","to":"deployed","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0026-a-phase-names-what-it-works-from-and-what-it-leaves-closed","at":"2026-08-29T10:27:14.872Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}
+{"node":"changes/0028-an-install-names-a-file-whose-text-this-version-changed","at":"2026-08-29T10:27:15.491Z","kind":"transition","from":"deployed","to":"published","by":"nesteant <nesterenko.anton@gmail.com>"}

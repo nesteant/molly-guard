@@ -25,6 +25,10 @@ the only route a sentence takes into a filed document, and the whole record that
    and where the two differ it wins.
 4. `lang:` in `mollyguard.yml` — write all document prose in that language.
 
+**And `docs/history/` is closed.** An archived change is a retired shape the corpus still keeps:
+what is in force is `docs/specs/` and `docs/decisions/`, what exists is what `molly status`
+lists, what is intended is `docs/roadmap/`.
+
 ## The flow
 
 ```

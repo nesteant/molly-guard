@@ -124,7 +124,7 @@ check "and the listing holds every command but one" 0 "9" -- sh -c '
 printf '\ninit\n'
 check "it scaffolds a corpus"             0 "corpus initialised" -- m init
 check "a second run completes it"         0 "corpus completed" -- m init
-check "and writes nothing the second time" 0 "already had everything" -- m init
+check "and writes nothing the second time" 0 "every file this version writes was already there" -- m init
 check "a second corpus is still refused"  1 "a corpus is already here" -- m init --root other
 
 # Every directory, present and explained. Git tracks no empty directory, so a skeleton
@@ -134,6 +134,14 @@ for d in capabilities specs decisions roadmap changes history; do
 done
 check "the root explains the layout"      0 "no lifecycle"    -- cat docs/README.md
 check "the ledger warns against editing"  0 "Never edit it"   -- cat docs/.mollyguard/README.md
+# The archive was sealed against editing and against re-checking and said nothing about being
+# read — and reading is the breach that looks like diligence while it happens. It was breached in
+# the first adopting corpus by the session auditing for exactly this, whose method was a sweep of
+# archived task lists.
+check "the archive is closed to reading"  0 "is read"         -- cat docs/history/README.md
+# A refusal that only refuses gets worked around. Each of the three questions an archived change
+# gets opened to answer has a current answer, and the explainer names all three.
+check "and names what to read instead"    0 "molly status"    -- cat docs/history/README.md
 
 # Created empty rather than absent: a ledger that appears on first write makes "no history"
 # and "history not started" indistinguishable, and those are different facts.
@@ -197,6 +205,55 @@ check "and every absent explainer is written" 0 "# changes/" -- sh -c '
   '"$(declare -f found)"'; found
   node '"$BIN"' init >/dev/null
   cat docs/changes/README.md'
+
+# A file kept because it exists, and a file kept because it is current, are different facts. The
+# report used to make the second claim from the first check — *it already had everything this
+# version writes*, printed over an explainer holding the previous version's text, in the release
+# whose whole delivery was the paragraph that explainer had not got.
+#
+# The edit stands in for the upgrade: the first run is the version that wrote the file, the edit
+# is the version that changed the text.
+upgraded() {
+  cd "$(mktemp -d)" || exit 2
+  node "$BIN" init >/dev/null
+  printf '# changes/\n\nWhat an older version said.\n' > docs/changes/README.md
+}
+check "a file this version rewrote is named" 0 "differs  docs/changes/README.md" -- sh -c '
+  '"$(declare -f upgraded)"'; upgraded
+  node '"$BIN"' init'
+# Reported, never repaired. `0008` and `the-tool-writes-only-what-it-owns`: this writes into a
+# directory the tool did not make, which is the whole difference from the skills next door.
+check "and left exactly as it was"           0 "What an older version said" -- sh -c '
+  '"$(declare -f upgraded)"'; upgraded
+  node '"$BIN"' init >/dev/null
+  cat docs/changes/README.md'
+# A corpus carrying an explainer this version moved past is not a failed initialisation.
+check "and the run still succeeds"           0 "corpus completed" -- sh -c '
+  '"$(declare -f upgraded)"'; upgraded
+  node '"$BIN"' init'
+# The positive case matters more than usual: a report that fires on every second `init` is one
+# people stop reading, which is how the sentence it replaces came to be believed.
+refute "a current corpus names nothing"      "differs" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null && node '"$BIN"' init'
+# Placed empty *as an invitation*, so a project that filled it in is the outcome this tool asked
+# for. Reporting that as behind is a finding on the healthy case, which is the shape this corpus
+# has already refused once.
+refute "a filled-in conventions is not named" "conventions.md" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  printf "We always squash.\n" >> docs/conventions.md
+  node '"$BIN"' init 2>&1 | sed -n "/hold text this version/,/^$/p"'
+# The ledger holds data rather than prose and is the one file here that grows, so `place` skips
+# the comparison for anything it places empty. Named separately by the block below, as before.
+refute "nor is a ledger with history in it"  "history.jsonl" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null
+  node '"$BIN"' change new "Some work" >/dev/null
+  node '"$BIN"' init 2>&1 | sed -n "/hold text this version/,/^$/p"'
+# The sentence the defect was reported against, held as both a presence and an absence: prose
+# that was wrong once is reintroduced by an edit that reads like a tidy-up.
+check "the report claims only what it checked" 0 "every file this version writes was already there" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null && node '"$BIN"' init'
+refute "and no longer claims currency"       "it already had everything" -- sh -c '
+  cd "$(mktemp -d)" && node '"$BIN"' init >/dev/null && node '"$BIN"' init'
 
 # The case the reported one was a mild instance of. An explainer can be written again by the
 # tool; a ledger cannot be written again by anything.
@@ -330,6 +387,13 @@ check "and says an answer is written back"      0 "rewriting the document it bel
   cat docs/changes/declares-nothing/change.md
 # Revising is rewriting, said in the document where striking-through actually happens.
 check "the work list is rewritten, not struck"  0 "deleted rather than struck through" -- \
+  cat docs/changes/declares-nothing/tasks.md
+# The payload belongs to publishing, and the task list is where it gets claimed by the wrong
+# phase — eleven open changes in the first adopting corpus carried a task instructing it, drafted
+# in separate sessions, because `molly-publish` and `molly-advance` were each unambiguous and
+# neither of them owns this artefact. Asserted on the template rather than on the skill: the
+# skill saying it is not evidence the surface those eleven were written against says it.
+check "the payload is not one of the tasks"     0 "The payload is not a task" -- \
   cat docs/changes/declares-nothing/tasks.md
 
 # A place to write, never a field to satisfy. A change holding an unanswered question is not a
@@ -1553,6 +1617,25 @@ check "and says how to find the corpus"        0 "sits at the top of the reposit
 refute "and does not tie its trigger to docs/"   "repository has docs/" -- sh -c '
   '"$(declare -f skill)"'; skill'
 
+# What a phase works from, and what it leaves closed. Reading was the one thing none of these
+# instructions bound, and it is the one that is silent: a read leaves no artefact, fails no
+# check, and produces work that looks better for having been informed by it. Asserted on the
+# installed files rather than on the generator, because a rule that only exists in scaffold.ts
+# is a rule no agent has.
+check "and closes the archive"                 0 "docs/history/\` is closed" -- sh -c '
+  '"$(declare -f skill)"'; skill'
+# A prohibition needs a destination — the published finding is that "never edit docs/specs/" was
+# in three places and broken anyway, by somebody holding a correction and offered no alternative.
+check "and says where to go instead"           0 "what is intended is \`docs/roadmap/\`" -- sh -c '
+  '"$(declare -f skill)"'; skill'
+advance() { cd "$(mktemp -d)" || exit 2; node "$BIN" agents --tools agents >/dev/null; cat .agents/skills/molly-advance/SKILL.md; }
+# The boundary is stated at the transition that crosses it, which is the one moment this skill
+# is loaded and the one moment the rule is actionable.
+check "the move names what work reads"         0 "own four documents" -- sh -c '
+  '"$(declare -f advance)"'; advance'
+check "and that a wrong plan moves back"       0 "move the change back" -- sh -c '
+  '"$(declare -f advance)"'; advance'
+
 # What makes one installation serve every major tool: the Agent Skills format, and nothing
 # outside it. A seventh frontmatter field is accepted by the tool that invented it and a hard
 # error on the path that packages the skill, so the two required fields are the whole contract.
@@ -1688,8 +1771,13 @@ check "and paths that exist in a corpus"       0 "ok" -- sh -c '
   [ -z "$bad" ] || { printf "named in the instructions, not in a corpus:%s\n" "$bad"; exit 1; }
   echo ok'
 
+# Sixty-four, and the four it moved by are the phase boundary above. The cap is not about
+# every session: a name and a description load into all of them, and a *body* loads only once a
+# model has decided the work is ours. So these lines are weighed against the sessions already
+# doing corpus work, where the thing they stop an agent loading is an archived change bundle —
+# four documents and a payload, any one of which is longer than the whole skill.
 check "the skill stays short"                  0 "ok" -- sh -c '
-  '"$(declare -f skill)"'; skill | wc -l | awk "{print (\$1 <= 60) ? \"ok\" : \"skill is \" \$1 \" lines\"}"'
+  '"$(declare -f skill)"'; skill | wc -l | awk "{print (\$1 <= 64) ? \"ok\" : \"skill is \" \$1 \" lines\"}"'
 # The four workflow skills are procedures, not a second copy of the reference one. A cap each,
 # because five skills load their name and description into every session that starts.
 check "and the workflow skills shorter still" 0 "ok" -- sh -c '
@@ -2526,7 +2614,10 @@ refute "and does not claim to have made one"   "corpus initialised" -- sh -c '
   '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes; node "$BIN" init'
 check "and names exactly what it added"        0 "+ docs/.gitattributes" -- sh -c '
   '"$(declare -f scratch)"'; scratch; rm docs/.gitattributes; node "$BIN" init'
-check "a run with nothing to add says that"    0 "already had everything" -- sh -c '
+# The wording is the assertion. This said *it already had everything this version writes*, which
+# is a claim about contents drawn from a check on their absence — and the block above is what the
+# command now says when the two disagree.
+check "a run with nothing to add says that"    0 "every file this version writes was already there" -- sh -c '
   '"$(declare -f scratch)"'; scratch; node "$BIN" init'
 
 # Reported by the command a planner already runs, so the gap is visible before somebody has to

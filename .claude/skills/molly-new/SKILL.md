@@ -25,7 +25,7 @@ user-invocable: false
    refuses a change for holding one: an unresolved change is one nobody approves. An answer is
    recorded by rewriting the document it belongs in and deleting the question.
 
-One claim per change; a second claim is a second change. **Revising is rewriting** — a change
-corrected later says what is in force now, as though it had always said it: no correction block,
-no dated addition, no struck-through task. Report the change's name and what is still empty. Do
-not move it — that is the next step.
+One claim per change; a second is a second change. **Revising is rewriting** — a change corrected
+later says what is in force now, as though it had always said it: no correction block, no dated
+addition, no struck-through task. **The payload is never a task**: `publish/` is written last,
+by `molly-publish`. Report the name and what is empty; do not move it — that is next.

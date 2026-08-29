@@ -21,5 +21,10 @@ command writes it, and a document disagreeing with the ledger is refused.
 A change whose `change.md` still holds a question under *What is not settled* is not one to
 approve. Nothing refuses the move; the answer is written into the document it belongs in first.
 
+**Implementation works from the change's own four documents.** The knowledge base was read while
+it was drafted and `plan.md` is what that produced. A plan that turns out to be wrong is not
+edited from inside the work: move the change back, rewrite it there, move it forward again. A
+*published* specification found wrong is a new change.
+
 The terminal state is not reachable this way. When the work is done and the documents are
 written, publish instead.

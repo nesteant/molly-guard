@@ -255,9 +255,16 @@ Nothing outside the frontmatter is read. The prose is for whoever reviews the ch
 
 Merged changes, kept verbatim.
 
-A change that is published is archived here rather than deleted. Nothing here is edited, and
-nothing here is re-checked — what it claimed is now in the knowledge base, so asking whether it
-still applies would fail on its own success.
+A change that is published is archived here rather than deleted. Nothing here is edited,
+nothing here is re-checked, and **nothing here is read while work is being drafted or built** —
+what it claimed is now in the knowledge base, so asking whether it still applies would fail on
+its own success.
+
+The third is the one that looks like diligence at the moment it happens. An archived change is a
+retired shape presented by the corpus itself, and copying it forward is how a decision nobody
+holds any more gets made again. What is in force is in \`specs/\` and \`decisions/\`; what exists
+is what \`molly status\` lists; what is intended is in \`roadmap/\`. Those are the three questions
+an archived change gets opened to answer, and each of them has an answer that is current.
 
 \`molly publish\` puts a change here, whole — including the \`publish/\` folder it carried, so
 this directory answers "what did that change actually write into the base" on its own.

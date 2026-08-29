@@ -138,9 +138,27 @@ export async function initCommand(
   // summary reads as one answer rather than as a write interrupted by complaints.
   const kept: string[] = [];
   const created: string[] = [];
+  // Kept and *behind*. A file this version rewrote is still a file init kept, so it is counted
+  // with the rest and named on its own — the same posture `molly agents --check` takes, and the
+  // one `0008` requires: reported, never replaced, because this writes into a directory the tool
+  // did not make.
+  //
+  // Three of the files placed below are excluded, because for them differing is the healthy
+  // case and a finding on the healthy case is a finding people learn to read past.
+  // `conventions.md` is placed empty *as an invitation*, so a project that filled it in is the
+  // outcome this tool asked for; `.gitattributes` already has its own named remedy below, and
+  // one file wants one message; the ledger is placed empty and holds data, which `place` skips
+  // for its own reason.
+  const behind: string[] = [];
+  const ours = new Set<string>([CONVENTIONS_FILE, ATTRIBUTES_FILE, HISTORY_FILE]);
   const put = async (path: string, text: string): Promise<void> => {
-    if ((await place(root, path, text)) === 'kept') kept.push(`${dir}/${path}`);
-    else created.push(`${dir}/${path}`);
+    const placement = await place(root, path, text);
+    if (placement === 'created') {
+      created.push(`${dir}/${path}`);
+      return;
+    }
+    kept.push(`${dir}/${path}`);
+    if (placement === 'differs' && !ours.has(path)) behind.push(`${dir}/${path}`);
   };
 
 
@@ -184,7 +202,10 @@ export async function initCommand(
     info(
       `  ${dim('config')}      ${relative(cwd, already.config) || CONFIG_FILE} ${dim('— left exactly as it is')}`,
     );
-    info(`  ${dim('added')}       ${created.length === 0 ? dim('nothing — it already had everything this version writes') : created.length + ' file(s)'}`);
+    // What existence establishes, and not a syllable more. This said *it already had everything
+    // this version writes*, which is a claim about contents made from a check on their absence —
+    // and it was printed over an explainer holding the previous version's text.
+    info(`  ${dim('added')}       ${created.length === 0 ? dim('nothing — every file this version writes was already there') : created.length + ' file(s)'}`);
     for (const path of created) info(`    ${green('+')} ${path}`);
     info(`  ${dim('kept')}        ${kept.length} file(s) — everything that was already there`);
     if (declared !== undefined) info(`  ${dim('language')}    ${declared} ${dim('— from the configuration, not from this run')}`);
@@ -216,6 +237,21 @@ export async function initCommand(
   if (kept.includes(`${dir}/${ATTRIBUTES_FILE}`)) {
     const existing = await readFile(join(root, ATTRIBUTES_FILE), 'utf8').catch(() => '');
     unmerged = !existing.includes(LEDGER_MERGE);
+  }
+
+  // Behind, and named for the same reason the kept ones are: a count leaves somebody to work out
+  // which file, and this one they cannot work out at all — the difference is between this version
+  // of the tool and an earlier one, and nothing in the corpus records which wrote what.
+  //
+  // Printed in both runs. A fresh `init` over a directory that already had a `docs/` meets the
+  // same case: those files are somebody's, and one of them may be an explainer an older MollyGuard
+  // left behind. The remedy is the one already offered for a kept explainer — delete it and run
+  // again — and it is offered rather than taken, because this is a directory the tool did not make.
+  if (behind.length > 0) {
+    info(`  ${amber('!')} ${behind.length} file(s) hold text this version has changed, and were left alone`);
+    for (const path of behind) info(`    ${dim(`differs  ${path}`)}`);
+    info(dim('    an explainer is prose nothing reads: delete one and run again to get this one'));
+    info();
   }
 
   if (kept.length > 0 && !completing) {
